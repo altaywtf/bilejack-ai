@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- OpenAI Configuration -->
+    <string name="openai_api_key">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</string>
+
+    <!-- GPT Settings -->
+    <integer name="gpt_max_tokens">300</integer>
+    <string name="gpt_model">gpt-4o</string>
+    <string name="gpt_system_prompt">SMS assistant for military service member with dumb phone. Respond in plain text only. You can use up to 450 characters total (will be sent as up to 3 SMS messages if needed). Be direct, helpful, and concise. No formatting, emojis, or special characters. Answer questions clearly and completely within the character limit.</string>
+
+    <!-- Allowed Phone Numbers (comma separated) -->
+    <string name="allowed_phone_numbers">ALLOWED_PHONE_NUMBERS</string>
+</resources> 

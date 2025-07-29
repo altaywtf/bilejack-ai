@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Monochrome Dark Theme Colors -->
+    <color name="black">#000000</color>
+    <color name="dark_gray">#1A1A1A</color>
+    <color name="medium_gray">#2D2D2D</color>
+    <color name="light_gray">#404040</color>
+    <color name="very_light_gray">#666666</color>
+    <color name="white">#FFFFFF</color>
+    <color name="off_white">#F5F5F5</color>
+    
+    <!-- Status Colors -->
+    <color name="success_green">#4CAF50</color>
+    <color name="error_red">#F44336</color>
+    <color name="warning_orange">#FF9800</color>
+    
+    <!-- Background Colors -->
+    <color name="background_primary">#121212</color>
+    <color name="background_secondary">#1E1E1E</color>
+    <color name="surface_color">#242424</color>
+    
+    <!-- Text Colors -->
+    <color name="text_primary">#FFFFFF</color>
+    <color name="text_secondary">#B3B3B3</color>
+    <color name="text_disabled">#666666</color>
+    
+    <!-- Accent Colors -->
+    <color name="accent_primary">#FFFFFF</color>
+    <color name="accent_secondary">#808080</color>
+</resources>

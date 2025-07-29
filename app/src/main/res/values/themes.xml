@@ -1,0 +1,80 @@
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!-- Dark Monochrome Theme -->
+    <style name="Theme.GPTSMSRelay" parent="Theme.Material3.Dark">
+        <!-- Primary Colors -->
+        <item name="colorPrimary">@color/white</item>
+        <item name="colorPrimaryVariant">@color/light_gray</item>
+        <item name="colorOnPrimary">@color/black</item>
+        
+        <!-- Secondary Colors -->
+        <item name="colorSecondary">@color/very_light_gray</item>
+        <item name="colorSecondaryVariant">@color/medium_gray</item>
+        <item name="colorOnSecondary">@color/white</item>
+        
+        <!-- Background Colors -->
+        <item name="android:colorBackground">@color/background_primary</item>
+        <item name="colorSurface">@color/surface_color</item>
+        <item name="colorOnSurface">@color/text_primary</item>
+        <item name="colorOnBackground">@color/text_primary</item>
+        
+        <!-- Status Bar -->
+        <item name="android:statusBarColor">@color/black</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:navigationBarColor">@color/black</item>
+        
+        <!-- Action Bar -->
+        <item name="colorPrimaryDark">@color/black</item>
+        
+        <!-- Window handling for safe areas -->
+        <item name="android:windowBackground">@color/background_primary</item>
+        <item name="android:windowTranslucentStatus">false</item>
+        <item name="android:windowTranslucentNavigation">false</item>
+        <item name="android:fitsSystemWindows">true</item>
+        
+        <!-- Dialog theme -->
+        <item name="alertDialogTheme">@style/MonochromeAlertDialog</item>
+    </style>
+    
+    <!-- Custom Alert Dialog Theme -->
+    <style name="MonochromeAlertDialog" parent="Theme.Material3.Dark.Dialog.Alert">
+        <item name="android:windowBackground">@color/surface_color</item>
+        <item name="android:textColor">@color/text_primary</item>
+        <item name="android:textColorPrimary">@color/text_primary</item>
+        <item name="android:textColorSecondary">@color/text_secondary</item>
+        <item name="colorPrimary">@color/white</item>
+        <item name="colorAccent">@color/white</item>
+        <item name="android:windowTitleStyle">@style/MonochromeDialogTitle</item>
+        <item name="android:buttonBarButtonStyle">@style/MonochromeDialogButton</item>
+        <item name="android:windowIsFloating">true</item>
+        <item name="android:windowCloseOnTouchOutside">true</item>
+    </style>
+    
+    <!-- Dialog Title Style -->
+    <style name="MonochromeDialogTitle" parent="Base.DialogWindowTitle.AppCompat">
+        <item name="android:textColor">@color/text_primary</item>
+        <item name="android:textSize">18sp</item>
+        <item name="android:fontFamily">monospace</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+    
+    <!-- Dialog Button Style -->
+    <style name="MonochromeDialogButton" parent="Widget.Material3.Button.TextButton.Dialog">
+        <item name="android:textColor">@color/white</item>
+        <item name="android:fontFamily">monospace</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textAllCaps">true</item>
+    </style>
+    
+    <!-- Button Styles -->
+    <style name="MonochromeButton" parent="Widget.Material3.Button">
+        <item name="backgroundTint">@color/surface_color</item>
+        <item name="android:textColor">@color/text_primary</item>
+        <item name="strokeColor">@color/very_light_gray</item>
+        <item name="strokeWidth">1dp</item>
+    </style>
+    
+    <style name="MonochromeButtonDanger" parent="Widget.Material3.Button">
+        <item name="backgroundTint">@color/error_red</item>
+        <item name="android:textColor">@color/white</item>
+    </style>
+</resources>
