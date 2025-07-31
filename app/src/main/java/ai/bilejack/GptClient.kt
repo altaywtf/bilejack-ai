@@ -1,4 +1,4 @@
-package wtf.altay.gptsmsrelay
+package ai.bilejack
 
 import android.content.Context
 import android.util.Log
@@ -27,7 +27,7 @@ class GptClient(private val context: Context) {
     data class ChatRequest(
         val model: String,
         val messages: List<ChatMessage>,
-        val max_tokens: Int
+        val max_tokens: Int,
     )
 
     data class ChatMessage(

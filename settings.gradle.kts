@@ -19,6 +19,6 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "gpt-sms-relay"
+rootProject.name = "bilejack-ai"
 include(":app")
  

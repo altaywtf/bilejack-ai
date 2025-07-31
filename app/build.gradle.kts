@@ -5,11 +5,11 @@ plugins {
 }
 
 android {
-    namespace = "wtf.altay.gptsmsrelay"
+    namespace = "ai.bilejack"
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "wtf.altay.gptsmsrelay"
+        applicationId = "ai.bilejack"
         minSdk = 36
         targetSdk = 36
         versionCode = 1

@@ -1,4 +1,4 @@
-package wtf.altay.gptsmsrelay.data
+package ai.bilejack.data
 
 data class AppStats(
     val smsReceived: Int = 0,

@@ -1,4 +1,4 @@
-package wtf.altay.gptsmsrelay.data
+package ai.bilejack.data
 
 import androidx.room.Dao
 import androidx.room.Insert

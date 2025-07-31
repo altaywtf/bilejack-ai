@@ -1,4 +1,4 @@
-package wtf.altay.gptsmsrelay.data
+package ai.bilejack.data
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
@@ -11,8 +11,10 @@ data class Message(
     val gptResponse: String? = null,
     val timestamp: Long = System.currentTimeMillis(),
     val isProcessed: Boolean = false,
-    val isProcessing: Boolean = false, // Track messages currently being processed
-    val sentChunks: String = "", // Track which chunks have been sent (comma-separated indices)
+    // Track messages currently being processed
+    val isProcessing: Boolean = false,
+    // Track which chunks have been sent (comma-separated indices)
+    val sentChunks: String = "",
     val hasError: Boolean = false,
     val errorMessage: String? = null,
 )

@@ -1,4 +1,4 @@
-package wtf.altay.gptsmsrelay.data
+package ai.bilejack.data
 
 import android.content.Context
 import androidx.room.Database
@@ -14,17 +14,19 @@ abstract class AppDatabase : RoomDatabase() {
     companion object {
         @Volatile private var instance: AppDatabase? = null
 
-        private val MIGRATION_1_2 = object : Migration(1, 2) {
-            override fun migrate(database: SupportSQLiteDatabase) {
-                database.execSQL("ALTER TABLE messages ADD COLUMN isProcessing INTEGER NOT NULL DEFAULT 0")
+        private val MIGRATION_1_2 =
+            object : Migration(1, 2) {
+                override fun migrate(database: SupportSQLiteDatabase) {
+                    database.execSQL("ALTER TABLE messages ADD COLUMN isProcessing INTEGER NOT NULL DEFAULT 0")
+                }
             }
-        }
 
-        private val MIGRATION_2_3 = object : Migration(2, 3) {
-            override fun migrate(database: SupportSQLiteDatabase) {
-                database.execSQL("ALTER TABLE messages ADD COLUMN sentChunks TEXT NOT NULL DEFAULT ''")
+        private val MIGRATION_2_3 =
+            object : Migration(2, 3) {
+                override fun migrate(database: SupportSQLiteDatabase) {
+                    database.execSQL("ALTER TABLE messages ADD COLUMN sentChunks TEXT NOT NULL DEFAULT ''")
+                }
             }
-        }
 
         fun getDatabase(context: Context): AppDatabase {
             return instance

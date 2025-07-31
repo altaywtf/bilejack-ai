@@ -1,5 +1,8 @@
-package wtf.altay.gptsmsrelay
+package ai.bilejack
 
+import ai.bilejack.data.AppDatabase
+import ai.bilejack.data.Message
+import ai.bilejack.data.MessageRepository
 import android.Manifest
 import android.content.Context
 import android.content.Intent
@@ -27,9 +30,6 @@ import io.reactivex.rxjava3.schedulers.Schedulers
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import wtf.altay.gptsmsrelay.data.AppDatabase
-import wtf.altay.gptsmsrelay.data.Message
-import wtf.altay.gptsmsrelay.data.MessageRepository
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -70,12 +70,12 @@ class MainActivity : AppCompatActivity() {
         // Configure system UI for dark theme with safe area handling
         window.statusBarColor = ContextCompat.getColor(this, R.color.black)
         window.navigationBarColor = ContextCompat.getColor(this, R.color.black)
-        
+
         // Ensure content renders properly with system bars
         window.decorView.systemUiVisibility = (
-            window.decorView.systemUiVisibility or 
-            android.view.View.SYSTEM_UI_FLAG_LAYOUT_STABLE or
-            android.view.View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+            window.decorView.systemUiVisibility or
+                android.view.View.SYSTEM_UI_FLAG_LAYOUT_STABLE or
+                android.view.View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
         )
 
         database = AppDatabase.getDatabase(this)

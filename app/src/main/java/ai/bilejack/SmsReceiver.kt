@@ -1,4 +1,4 @@
-package wtf.altay.gptsmsrelay
+package ai.bilejack
 
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -47,10 +47,10 @@ class SmsReceiver : BroadcastReceiver() {
                     var retries = 0
                     val maxRetries = context.resources.getInteger(R.integer.service_max_retries)
                     val retryDelay = context.resources.getInteger(R.integer.service_retry_delay_ms).toLong()
-                    
+
                     while (retries < maxRetries) {
                         val serviceInstance = SmsRelayService.getInstance()
-                        
+
                         if (serviceInstance != null) {
                             serviceInstance.processIncomingSms(phoneNumber, messageBody)
                             Log.d(tag, "✅ SMS processed successfully")
@@ -61,7 +61,7 @@ class SmsReceiver : BroadcastReceiver() {
                             delay(retryDelay)
                         }
                     }
-                    
+
                     if (retries >= maxRetries) {
                         Log.e(tag, "❌ Failed to process SMS - service unavailable after $maxRetries retries")
                     }

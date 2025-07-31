@@ -1,4 +1,4 @@
-package wtf.altay.gptsmsrelay.data
+package ai.bilejack.data
 
 import android.content.Context
 import io.reactivex.rxjava3.core.Flowable

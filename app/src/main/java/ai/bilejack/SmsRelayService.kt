@@ -1,4 +1,4 @@
-package wtf.altay.gptsmsrelay
+package ai.bilejack
 
 import android.app.Notification
 import android.app.NotificationChannel
@@ -14,9 +14,8 @@ import androidx.core.app.NotificationCompat
 import androidx.lifecycle.LifecycleService
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 class SmsRelayService : LifecycleService() {
     private val tag = "SmsRelayService"
@@ -27,14 +26,14 @@ class SmsRelayService : LifecycleService() {
     private var preferredSmsManager: SmsManager? = null
     private var subscriptionId: Int = -1
     private var selectedCarrierName: String = "Unknown"
-    
+
     // Simple in-memory tracking - NO persistence bullshit
     private val currentlyProcessing = mutableSetOf<String>()
 
     companion object {
         @Volatile
         private var instance: SmsRelayService? = null
-        
+
         fun getInstance(): SmsRelayService? = instance
     }
 
@@ -54,17 +53,20 @@ class SmsRelayService : LifecycleService() {
     }
 
     // Called by SmsReceiver - SYNCHRONOUS processing
-    fun processIncomingSms(phoneNumber: String, messageBody: String) {
+    fun processIncomingSms(
+        phoneNumber: String,
+        messageBody: String,
+    ) {
         val messageKey = "$phoneNumber:${messageBody.hashCode()}"
-        
+
         Log.d(tag, "📨 Processing SMS: $messageKey")
-        
+
         // Simple duplicate check - in memory only
         if (currentlyProcessing.contains(messageKey)) {
             Log.w(tag, "🚫 Already processing this message, skipping: $messageKey")
             return
         }
-        
+
         currentlyProcessing.add(messageKey)
 
         // Process synchronously on background thread
@@ -82,7 +84,7 @@ class SmsRelayService : LifecycleService() {
                 for ((index, chunk) in smsChunks.withIndex()) {
                     sendSmsMessage(phoneNumber, chunk)
                     Log.d(tag, "✅ Sent chunk ${index + 1}/${smsChunks.size}")
-                    
+
                     // Delay between chunks to prevent rate limiting
                     if (index < smsChunks.size - 1) {
                         delay(chunkDelay)
@@ -90,10 +92,9 @@ class SmsRelayService : LifecycleService() {
                 }
 
                 Log.d(tag, "🎉 All chunks sent successfully for: $messageKey")
-
             } catch (e: Exception) {
                 Log.e(tag, "❌ Error processing $messageKey: ${e.message}", e)
-                
+
                 try {
                     sendSmsMessage(phoneNumber, "Error: Unable to process your message.")
                 } catch (smsError: Exception) {
@@ -232,14 +233,16 @@ class SmsRelayService : LifecycleService() {
             if (message.isBlank()) {
                 throw IllegalArgumentException("Message cannot be blank")
             }
-            
+
             if (preferredSmsManager != null) {
                 preferredSmsManager!!.sendTextMessage(
                     phoneNumber,
                     null,
                     message,
-                    null, // sentIntent - could add for delivery confirmation
-                    null, // deliveryIntent
+                    // sentIntent - could add for delivery confirmation
+                    null,
+                    // deliveryIntent
+                    null,
                 )
                 Log.d(tag, "📱 SMS sent via $selectedCarrierName")
             } else {
@@ -252,17 +255,16 @@ class SmsRelayService : LifecycleService() {
                 )
                 Log.d(tag, "📱 SMS sent via default SIM")
             }
-            
         } catch (e: Exception) {
             Log.e(tag, "❌ SMS send failed to $phoneNumber: ${e.message}", e)
-            
+
             // Log more details about the error
             when (e) {
                 is IllegalArgumentException -> Log.e(tag, "📱 Invalid phone number or message format")
                 is SecurityException -> Log.e(tag, "📱 Missing SMS permission or SIM card issue")
                 else -> Log.e(tag, "📱 Unknown SMS error: ${e.javaClass.simpleName}")
             }
-            
+
             throw e
         }
     }
@@ -276,18 +278,19 @@ class SmsRelayService : LifecycleService() {
         }
 
         // Calculate prefix length dynamically based on max batches (e.g., "(3/3) " = 6 chars)
-        val prefixLength = "(${maxBatches}/${maxBatches}) ".length
-        
+        val prefixLength = "($maxBatches/$maxBatches) ".length
+
         // Calculate maximum allowed characters for max batches
         val maxTotalChars = maxBatches * (maxLength - prefixLength)
-        
-        val processedMessage = if (message.length > maxTotalChars) {
-            // Truncate and add indication (leave 20 chars for truncation note)
-            val truncated = message.substring(0, maxTotalChars - 20)
-            "$truncated... [truncated]"
-        } else {
-            message
-        }
+
+        val processedMessage =
+            if (message.length > maxTotalChars) {
+                // Truncate and add indication (leave 20 chars for truncation note)
+                val truncated = message.substring(0, maxTotalChars - 20)
+                "$truncated... [truncated]"
+            } else {
+                message
+            }
 
         // First, split the message into chunks WITHOUT numbering
         val rawChunks = mutableListOf<String>()
@@ -297,14 +300,15 @@ class SmsRelayService : LifecycleService() {
         while (remaining.isNotEmpty() && partNumber <= maxBatches) {
             // Reserve space for numbering like "(X/Y) "
             val availableLength = maxLength - prefixLength
-            
-            val chunkSize = if (remaining.length > availableLength) {
-                // Find last space before availableLength to avoid cutting words
-                val lastSpace = remaining.substring(0, availableLength).lastIndexOf(' ')
-                if (lastSpace > 0) lastSpace else availableLength
-            } else {
-                remaining.length
-            }
+
+            val chunkSize =
+                if (remaining.length > availableLength) {
+                    // Find last space before availableLength to avoid cutting words
+                    val lastSpace = remaining.substring(0, availableLength).lastIndexOf(' ')
+                    if (lastSpace > 0) lastSpace else availableLength
+                } else {
+                    remaining.length
+                }
 
             val chunk = remaining.substring(0, chunkSize).trim()
             rawChunks.add(chunk)
@@ -314,7 +318,7 @@ class SmsRelayService : LifecycleService() {
 
         // Now we know the ACTUAL total parts, add numbering
         val totalParts = rawChunks.size
-        
+
         return rawChunks.mapIndexed { index, chunk ->
             "(${index + 1}/$totalParts) $chunk"
         }

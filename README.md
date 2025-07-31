@@ -1,4 +1,4 @@
-# GPT SMS Relay Android App
+# Bilejack AI
 
 A native Android app that acts as a two-way SMS relay to communicate with the OpenAI ChatGPT API. Perfect for enabling AI chat capabilities on dumbphones via SMS.
 
@@ -24,7 +24,7 @@ A native Android app that acts as a two-way SMS relay to communicate with the Op
 1. **Clone and Build**:
    ```bash
    git clone <repository-url>
-   cd gpt-sms-relay
+   cd bilejack-ai
    ./gradlew assembleDebug
    ```
 

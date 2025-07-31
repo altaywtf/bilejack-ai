@@ -1,6 +1,6 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
     <!-- Dark Monochrome Theme -->
-    <style name="Theme.GPTSMSRelay" parent="Theme.Material3.Dark">
+    <style name="Theme.BilejackAI" parent="Theme.Material3.Dark">
         <!-- Primary Colors -->
         <item name="colorPrimary">@color/white</item>
         <item name="colorPrimaryVariant">@color/light_gray</item>
