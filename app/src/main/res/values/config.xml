@@ -2,7 +2,6 @@
 <resources>
     <!-- OpenRouter Configuration (Unified LLM Gateway) -->
     <string name="openrouter_api_key">OPENROUTER_API_KEY</string>
-    <integer name="openrouter_max_tokens">250</integer>
     <string name="openrouter_system_prompt">You are a helpful assistant for SMS. Your response must be under 360 characters total (3 SMS maximum). Give direct, concise answers. Use plain text only. No emojis or special formatting.</string>
     
     <!-- Available Models (comma separated model IDs) -->

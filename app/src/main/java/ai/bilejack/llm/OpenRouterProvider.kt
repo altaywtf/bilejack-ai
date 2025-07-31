@@ -32,7 +32,6 @@ class OpenRouterProvider(private val context: Context) {
     data class ChatRequest(
         val model: String,
         val messages: List<ChatMessage>,
-        val max_tokens: Int,
     )
 
     data class ChatMessage(
@@ -79,10 +78,6 @@ class OpenRouterProvider(private val context: Context) {
         }
     }
 
-    private fun getMaxTokens(): Int {
-        return context.resources.getInteger(R.integer.openrouter_max_tokens)
-    }
-
     private fun getSystemPrompt(): String {
         return context.getString(R.string.openrouter_system_prompt)
     }
@@ -111,7 +106,6 @@ class OpenRouterProvider(private val context: Context) {
                             ChatMessage("system", "${getSystemPrompt()}\n\nREMINDER: Maximum response length is 360 characters. Count your characters carefully. Respond with plain text only, no web searches, no citations, no annotations, no tools."),
                             ChatMessage("user", userMessage),
                         ),
-                    max_tokens = getMaxTokens(),
                 )
 
             Log.d(tag, "🤖 Sending request to OpenRouter with model: ${getModel()}")
@@ -139,17 +133,12 @@ class OpenRouterProvider(private val context: Context) {
             }
 
             val chatResponse = moshi.adapter(ChatResponse::class.java).fromJson(responseBody ?: "")
-            Log.d(tag, "🔍 Raw response body: $responseBody")
-            Log.d(tag, "🔍 Parsed chatResponse: $chatResponse")
             
             val llmMessage =
                 chatResponse?.choices?.firstOrNull()?.message?.content
                     ?: throw Exception("Invalid OpenRouter response format")
 
-            Log.d(tag, "🔍 Raw LLM message: '$llmMessage'")
             val content = llmMessage.trim()
-            Log.d(tag, "🔍 Trimmed content: '$content' (${content.length} chars)")
-            
             val maxChars = 360 // 3 SMS * 120 chars each
 
             // Enforce hard character limit
