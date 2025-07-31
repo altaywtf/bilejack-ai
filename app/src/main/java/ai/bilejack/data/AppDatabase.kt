@@ -35,7 +35,7 @@ abstract class AppDatabase : RoomDatabase() {
                         Room.databaseBuilder(
                             context.applicationContext,
                             AppDatabase::class.java,
-                            "gpt_sms_relay_database",
+                            "llm_sms_relay_database",
                         )
                             .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
                             .build()

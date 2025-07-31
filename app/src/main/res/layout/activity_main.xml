@@ -2,7 +2,6 @@
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:paddingTop="24dp"
     android:background="@color/background_primary"
     android:fitsSystemWindows="true"
     android:clipToPadding="false">
@@ -11,20 +10,20 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:paddingLeft="24dp"
-        android:paddingRight="24dp"
-        android:paddingTop="16dp"
-        android:paddingBottom="16dp">
+        android:paddingLeft="20dp"
+        android:paddingRight="20dp"
+        android:paddingTop="56dp"
+        android:paddingBottom="40dp">
 
         <!-- Stats Section -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:layout_marginBottom="16dp"
+            android:layout_marginBottom="20dp"
             android:background="@color/surface_color"
             android:elevation="2dp"
-            android:padding="20dp">
+            android:padding="16dp">
 
             <TextView
                 android:id="@+id/stats_received"
@@ -40,7 +39,7 @@
             <View
                 android:layout_width="1dp"
                 android:layout_height="match_parent"
-                android:background="@color/very_light_gray"
+                android:background="@color/border_subtle"
                 android:layout_marginHorizontal="8dp" />
 
             <TextView
@@ -57,7 +56,7 @@
             <View
                 android:layout_width="1dp"
                 android:layout_height="match_parent"
-                android:background="@color/very_light_gray"
+                android:background="@color/border_subtle"
                 android:layout_marginHorizontal="8dp" />
 
             <TextView
@@ -78,17 +77,17 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:layout_marginBottom="16dp"
+            android:layout_marginBottom="20dp"
             android:background="@color/surface_color"
             android:elevation="2dp"
             android:padding="16dp">
 
             <TextView
-                android:id="@+id/status_gpt"
+                android:id="@+id/status_llm"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="❌ GPT API"
+                android:text="❌ LLM API"
                 android:textSize="16sp"
                 android:textColor="@color/text_secondary"
                 android:gravity="center"
@@ -97,7 +96,7 @@
             <View
                 android:layout_width="1dp"
                 android:layout_height="match_parent"
-                android:background="@color/very_light_gray"
+                android:background="@color/border_subtle"
                 android:layout_marginHorizontal="8dp" />
 
             <TextView
@@ -118,7 +117,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:layout_marginBottom="16dp">
+            android:layout_marginBottom="20dp">
 
             <!-- Restart Service Button -->
             <Button
@@ -128,55 +127,207 @@
                 android:layout_marginBottom="8dp"
                 android:text="🔄 RESTART SERVICE"
                 android:textColor="@color/text_primary"
-                android:backgroundTint="@color/surface_color"
+                android:backgroundTint="@color/surface_hover"
                 android:fontFamily="monospace"
                 android:textSize="14sp" />
 
-            <!-- Test GPT Button -->
+            <!-- Test LLM Button -->
             <Button
-                android:id="@+id/btn_test_gpt"
+                android:id="@+id/btn_test_llm"
                 android:layout_width="match_parent"
                 android:layout_height="56dp"
                 android:layout_marginBottom="8dp"
-                android:text="🧪 TEST GPT CONNECTION"
+                android:text="🧪 TEST LLM CONNECTION"
                 android:textColor="@color/text_primary"
-                android:backgroundTint="@color/surface_color"
+                android:backgroundTint="@color/surface_hover"
                 android:fontFamily="monospace"
                 android:textSize="14sp" />
 
-            <Button
-                android:id="@+id/btn_clear_log"
-                android:layout_width="match_parent"
-                android:layout_height="56dp"
-                android:text="🧹 CLEAR LOG"
-                android:backgroundTint="@color/error_red"
-                android:textColor="@color/white"
-                android:fontFamily="monospace"
-                android:textSize="14sp" />
+
 
         </LinearLayout>
 
-        <!-- Message History Title -->
-        <TextView
+        <!-- Whitelist Management Section -->
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="MESSAGE HISTORY"
-            android:textSize="18sp"
-            android:textStyle="bold"
-            android:textColor="@color/text_primary"
-            android:layout_marginBottom="8dp"
-            android:fontFamily="monospace" />
-
-        <!-- Message List -->
-        <ListView
-            android:id="@+id/messages_list"
-            android:layout_width="match_parent"
-            android:layout_height="300dp"
+            android:orientation="vertical"
+            android:layout_marginBottom="20dp"
             android:background="@color/surface_color"
             android:elevation="2dp"
-            android:divider="@color/very_light_gray"
-            android:dividerHeight="1dp"
-            android:padding="8dp" />
+            android:padding="16dp">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="ALLOWED PHONE NUMBERS"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:textColor="@color/text_primary"
+                android:fontFamily="monospace"
+                android:layout_marginBottom="8dp" />
+
+            <TextView
+                android:id="@+id/whitelist_summary"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Loading..."
+                android:textSize="14sp"
+                android:textColor="@color/text_secondary"
+                android:fontFamily="monospace"
+                android:layout_marginBottom="12dp" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginBottom="8dp">
+
+                <EditText
+                    android:id="@+id/edit_phone_number"
+                    android:layout_width="0dp"
+                    android:layout_height="48dp"
+                    android:layout_weight="1"
+                    android:hint="Enter phone number..."
+                    android:inputType="phone"
+                    android:textSize="14sp"
+                    android:fontFamily="monospace"
+                    android:textColor="@color/text_primary"
+                    android:textColorHint="@color/text_secondary"
+                    android:background="@color/background_primary"
+                    android:padding="12dp"
+                    android:layout_marginEnd="8dp" />
+
+                <Button
+                    android:id="@+id/btn_add_number"
+                    android:layout_width="wrap_content"
+                    android:layout_height="48dp"
+                    android:text="➕ ADD"
+                    android:textColor="@color/text_primary"
+                    android:backgroundTint="@color/surface_hover"
+                    android:fontFamily="monospace"
+                    android:textSize="12sp"
+                    android:minWidth="80dp" />
+
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <Button
+                    android:id="@+id/btn_manage_whitelist"
+                    android:layout_width="0dp"
+                    android:layout_height="48dp"
+                    android:layout_weight="1"
+                    android:layout_marginEnd="4dp"
+                    android:text="📋 MANAGE LIST"
+                    android:textColor="@color/text_primary"
+                    android:backgroundTint="@color/surface_hover"
+                    android:fontFamily="monospace"
+                    android:textSize="12sp" />
+
+                <Button
+                    android:id="@+id/btn_clear_whitelist"
+                    android:layout_width="0dp"
+                    android:layout_height="48dp"
+                    android:layout_weight="1"
+                    android:layout_marginStart="4dp"
+                    android:text="🗑️ CLEAR ALL"
+                    android:textColor="@color/white"
+                    android:backgroundTint="@color/error_red"
+                    android:fontFamily="monospace"
+                    android:textSize="12sp" />
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+        <!-- LLM Model Selection Section -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:layout_marginBottom="20dp"
+            android:background="@color/surface_color"
+            android:elevation="2dp"
+            android:padding="16dp">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="🤖 AI MODEL"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:textColor="@color/text_primary"
+                android:fontFamily="monospace"
+                android:layout_marginBottom="8dp" />
+
+            <TextView
+                android:id="@+id/model_summary"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Loading..."
+                android:textSize="14sp"
+                android:textColor="@color/text_secondary"
+                android:fontFamily="monospace"
+                android:layout_marginBottom="12dp" />
+
+            <Button
+                android:id="@+id/btn_select_model"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:text="🔄 SELECT MODEL"
+                android:textColor="@color/text_primary"
+                android:backgroundTint="@color/surface_hover"
+                android:fontFamily="monospace"
+                android:textSize="12sp" />
+
+        </LinearLayout>
+
+        <!-- Message History Section -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="@color/surface_color"
+            android:elevation="2dp"
+            android:padding="16dp">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="📜 MESSAGE HISTORY"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:textColor="@color/text_primary"
+                android:layout_marginBottom="12dp"
+                android:fontFamily="monospace" />
+
+            <!-- Message List -->
+            <ListView
+                android:id="@+id/messages_list"
+                android:layout_width="match_parent"
+                android:layout_height="300dp"
+                android:background="@color/gray2"
+                android:divider="@color/border_subtle"
+                android:dividerHeight="1dp"
+                android:padding="8dp"
+                android:layout_marginBottom="12dp" />
+
+            <!-- Clear Message History Button -->
+            <Button
+                android:id="@+id/btn_clear_log"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:text="🗑️ CLEAR MESSAGE HISTORY"
+                android:backgroundTint="@color/error_red"
+                android:textColor="@color/white"
+                android:fontFamily="monospace"
+                android:textSize="12sp" />
+
+        </LinearLayout>
 
     </LinearLayout>
 

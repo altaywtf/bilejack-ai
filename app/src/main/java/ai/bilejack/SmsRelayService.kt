@@ -1,5 +1,6 @@
 package ai.bilejack
 
+import ai.bilejack.data.MessageRepository
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -19,10 +20,11 @@ import kotlinx.coroutines.launch
 
 class SmsRelayService : LifecycleService() {
     private val tag = "SmsRelayService"
-    private val channelId = "gpt_sms_relay_channel"
+    private val channelId = "llm_sms_relay_channel"
     private val notificationId = 1
 
-    private lateinit var gptClient: GptClient
+    private lateinit var llmModelManager: LlmModelManager
+    private lateinit var messageRepository: MessageRepository
     private var preferredSmsManager: SmsManager? = null
     private var subscriptionId: Int = -1
     private var selectedCarrierName: String = "Unknown"
@@ -41,7 +43,8 @@ class SmsRelayService : LifecycleService() {
         super.onCreate()
         instance = this
 
-        gptClient = GptClient(this)
+        llmModelManager = LlmModelManager(this)
+        messageRepository = MessageRepository(this)
 
         // Setup SIM management
         setupSmsManager()
@@ -56,6 +59,7 @@ class SmsRelayService : LifecycleService() {
     fun processIncomingSms(
         phoneNumber: String,
         messageBody: String,
+        messageId: Long,
     ) {
         val messageKey = "$phoneNumber:${messageBody.hashCode()}"
 
@@ -72,11 +76,24 @@ class SmsRelayService : LifecycleService() {
         // Process synchronously on background thread
         lifecycleScope.launch(Dispatchers.IO) {
             try {
-                Log.d(tag, "🤖 Calling GPT for: $messageKey")
-                val gptResponse = gptClient.sendMessage(messageBody)
+                Log.d(tag, "🤖 Calling LLM for: $messageKey")
+                val llmResponse = llmModelManager.sendMessage(messageBody)
+
+                // Update message in database with LLM response
+                val originalMessage = messageRepository.getMessageById(messageId)
+                if (originalMessage != null) {
+                    val updatedMessage =
+                        originalMessage.copy(
+                            llmResponse = llmResponse,
+                            isProcessed = true,
+                            isProcessing = false,
+                        )
+                    messageRepository.updateMessage(updatedMessage)
+                    Log.d(tag, "💾 Updated message in database with LLM response")
+                }
 
                 // Split and send SMS chunks with delays
-                val smsChunks = splitMessageForSms(gptResponse)
+                val smsChunks = splitMessageForSms(llmResponse)
                 Log.d(tag, "📤 Sending ${smsChunks.size} SMS chunks")
 
                 val chunkDelay = resources.getInteger(R.integer.sms_chunk_delay_ms).toLong()
@@ -94,6 +111,19 @@ class SmsRelayService : LifecycleService() {
                 Log.d(tag, "🎉 All chunks sent successfully for: $messageKey")
             } catch (e: Exception) {
                 Log.e(tag, "❌ Error processing $messageKey: ${e.message}", e)
+
+                // Update message with error
+                val originalMessage = messageRepository.getMessageById(messageId)
+                if (originalMessage != null) {
+                    val errorMessage =
+                        originalMessage.copy(
+                            hasError = true,
+                            errorMessage = e.message,
+                            isProcessing = false,
+                        )
+                    messageRepository.updateMessage(errorMessage)
+                    Log.d(tag, "💾 Updated message in database with error")
+                }
 
                 try {
                     sendSmsMessage(phoneNumber, "Error: Unable to process your message.")
@@ -191,10 +221,10 @@ class SmsRelayService : LifecycleService() {
         val channel =
             NotificationChannel(
                 channelId,
-                "GPT SMS Relay",
+                "LLM SMS Relay",
                 NotificationManager.IMPORTANCE_LOW,
             ).apply {
-                description = "Background service for SMS-GPT relay"
+                description = "Background service for SMS-LLM relay"
                 setShowBadge(false)
             }
 
@@ -213,7 +243,7 @@ class SmsRelayService : LifecycleService() {
             )
 
         return NotificationCompat.Builder(this, channelId)
-            .setContentTitle("GPT SMS Relay Active")
+            .setContentTitle("🤖 LLM SMS Relay Active")
             .setContentText("Using: $selectedCarrierName")
             .setSmallIcon(android.R.drawable.ic_dialog_email)
             .setContentIntent(pendingIntent)

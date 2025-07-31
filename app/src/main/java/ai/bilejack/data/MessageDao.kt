@@ -32,6 +32,9 @@ interface MessageDao {
     @Query("SELECT * FROM messages WHERE isProcessed = 0 AND isProcessing = 0 ORDER BY timestamp ASC LIMIT 1")
     suspend fun getNextUnprocessedMessage(): Message?
 
+    @Query("SELECT * FROM messages WHERE id = :id")
+    suspend fun getMessageById(id: Long): Message?
+
     @Insert suspend fun insertMessage(message: Message): Long
 
     @Update suspend fun updateMessage(message: Message)

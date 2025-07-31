@@ -8,7 +8,7 @@ data class Message(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val phoneNumber: String,
     val incomingSms: String,
-    val gptResponse: String? = null,
+    val llmResponse: String? = null,
     val timestamp: Long = System.currentTimeMillis(),
     val isProcessed: Boolean = false,
     // Track messages currently being processed

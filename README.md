@@ -1,11 +1,11 @@
 # Bilejack AI
 
-A native Android app that acts as a two-way SMS relay to communicate with the OpenAI ChatGPT API. Perfect for enabling AI chat capabilities on dumbphones via SMS.
+A native Android app that acts as a two-way SMS relay to communicate with LLM APIs. Perfect for enabling AI chat capabilities on dumbphones via SMS.
 
 ## 🚀 Features
 
-- **Automatic SMS Processing**: Receives SMS messages and sends them to ChatGPT
-- **Smart Response Splitting**: Automatically splits long GPT responses into multiple SMS messages
+- **Automatic SMS Processing**: Receives SMS messages and sends them to LLM
+- **Smart Response Splitting**: Automatically splits long LLM responses into multiple SMS messages
 - **Background Service**: Runs reliably in the background with foreground service
 - **Message History**: Track all conversations with timestamps and status
 - **Error Handling**: Robust error handling with automatic error SMS responses
@@ -17,7 +17,7 @@ A native Android app that acts as a two-way SMS relay to communicate with the Op
 - Android device with API level 36+ (Android 14+)
 - Active SIM card with SMS capabilities
 - Internet connection (WiFi or mobile data)
-- OpenAI API key
+- LLM API key
 
 ## 🛠️ Installation
 
@@ -43,10 +43,10 @@ A native Android app that acts as a two-way SMS relay to communicate with the Op
 1. **Set API Key**:
    - Open the app
    - Tap "🔑 Set API Key"
-   - Enter your OpenAI API key
+   - Enter your LLM API key
 
 2. **Test Connection**:
-   - Tap "🧪 Test GPT"
+   - Tap "🧪 Test LLM"
    - Verify successful connection
 
 3. **Send Test SMS**:
@@ -69,11 +69,11 @@ A native Android app that acts as a two-way SMS relay to communicate with the Op
 ## 🎛️ UI Controls
 
 - **📩/📤/❌ Stats**: Shows received, sent, and error counts
-- **Status Indicators**: GPT API and network connectivity status
+- **Status Indicators**: LLM API and network connectivity status
 - **🔄 Refresh**: Update statistics and message list
 - **🔄 Restart Service**: Restart background processing
-- **🔑 Set API Key**: Configure OpenAI API key
-- **🧪 Test GPT**: Test API connectivity
+- **🔑 Set API Key**: Configure LLM API key
+- **🧪 Test LLM**: Test API connectivity
 - **🧹 Clear Log**: Delete all message history
 
 ## 🔧 Technical Details
@@ -82,13 +82,13 @@ A native Android app that acts as a two-way SMS relay to communicate with the Op
 - **MainActivity**: UI and controls
 - **SmsReceiver**: Handles incoming SMS broadcasts
 - **SmsRelayService**: Background processing and GPT communication
-- **GptClient**: OpenAI API communication
+- **GptClient**: LLM API communication
 - **Room Database**: Message storage and statistics
 
 ### Message Flow
 1. SMS received → SmsReceiver → Database
 2. Service picks up unprocessed messages
-3. Send to OpenAI API → Get response
+3. Send to LLM API → Get response
 4. Split response if needed → Send SMS replies
 5. Update database with results
 
@@ -112,7 +112,7 @@ A native Android app that acts as a two-way SMS relay to communicate with the Op
 - Check if another SMS app is set as default
 
 ### GPT responses not sent
-- Test GPT connection in app
+- Test LLM connection in app
 - Check internet connectivity
 - Verify API key is correct
 - Check for API rate limits
@@ -152,4 +152,4 @@ MIT License - See LICENSE file for details.
 
 ---
 
-**⚠️ Important**: This app will incur costs for both SMS messages and OpenAI API usage. Monitor usage carefully and set appropriate limits. 
+**⚠️ Important**: This app will incur costs for both SMS messages and LLM API usage. Monitor usage carefully and set appropriate limits. 

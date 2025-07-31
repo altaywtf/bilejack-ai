@@ -15,6 +15,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ArrayAdapter
 import android.widget.Button
+import android.widget.EditText
 import android.widget.ListView
 import android.widget.TextView
 import android.widget.Toast
@@ -39,17 +40,25 @@ class MainActivity : AppCompatActivity() {
     private val requestCode = 1001
 
     private lateinit var database: AppDatabase
-    private lateinit var gptClient: GptClient
     private lateinit var messageRepository: MessageRepository
+    private lateinit var whitelistManager: WhitelistManager
+    private lateinit var llmModelManager: LlmModelManager
 
     // UI Components
     private lateinit var statsReceived: TextView
     private lateinit var statsSent: TextView
     private lateinit var statsErrors: TextView
-    private lateinit var statusGpt: TextView
+    private lateinit var statusLlm: TextView
     private lateinit var statusNetwork: TextView
     private lateinit var messagesList: ListView
     private lateinit var messagesAdapter: MonochromeArrayAdapter
+
+    // Whitelist UI components
+    private lateinit var whitelistSummary: TextView
+    private lateinit var editPhoneNumber: EditText
+
+    // LLM Model UI components
+    private lateinit var modelSummary: TextView
 
     // RxJava disposables for reactive updates
     private val disposables = CompositeDisposable()
@@ -67,24 +76,33 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        // Configure system UI for dark theme with safe area handling
+        // Configure system UI for dark theme with proper safe area handling
         window.statusBarColor = ContextCompat.getColor(this, R.color.black)
         window.navigationBarColor = ContextCompat.getColor(this, R.color.black)
 
-        // Ensure content renders properly with system bars
-        window.decorView.systemUiVisibility = (
-            window.decorView.systemUiVisibility or
+        // Use modern window insets instead of deprecated system UI visibility flags
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
+            window.setDecorFitsSystemWindows(false)
+        } else {
+            @Suppress("DEPRECATION")
+            window.decorView.systemUiVisibility = (
                 android.view.View.SYSTEM_UI_FLAG_LAYOUT_STABLE or
-                android.view.View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
-        )
+                    android.view.View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+            )
+        }
 
         database = AppDatabase.getDatabase(this)
-        gptClient = GptClient(this)
         messageRepository = MessageRepository(this)
+        whitelistManager = WhitelistManager(this)
+        llmModelManager = LlmModelManager(this)
 
         initializeUI()
         checkPermissions()
         startService()
+
+        // Test log to verify Logcat is working
+        Log.d(tag, "🚀 MainActivity created successfully - Logcat test!")
+        Log.i(tag, "📱 App version: ${packageManager.getPackageInfo(packageName, 0).versionName}")
 
         // Start reactive subscriptions for real-time updates
         startReactiveUpdates()
@@ -99,16 +117,35 @@ class MainActivity : AppCompatActivity() {
         statsReceived = findViewById(R.id.stats_received)
         statsSent = findViewById(R.id.stats_sent)
         statsErrors = findViewById(R.id.stats_errors)
-        statusGpt = findViewById(R.id.status_gpt)
+        statusLlm = findViewById(R.id.status_llm)
         statusNetwork = findViewById(R.id.status_network)
         messagesList = findViewById(R.id.messages_list)
+
+        // Whitelist UI elements
+        whitelistSummary = findViewById(R.id.whitelist_summary)
+        editPhoneNumber = findViewById(R.id.edit_phone_number)
+
+        // LLM Model UI elements
+        modelSummary = findViewById(R.id.model_summary)
 
         messagesAdapter = MonochromeArrayAdapter(this, mutableListOf())
         messagesList.adapter = messagesAdapter
 
         findViewById<Button>(R.id.btn_clear_log).setOnClickListener { clearLog() }
         findViewById<Button>(R.id.btn_restart_service).setOnClickListener { restartService() }
-        findViewById<Button>(R.id.btn_test_gpt).setOnClickListener { testGptConnection() }
+        findViewById<Button>(R.id.btn_test_llm).setOnClickListener { testLlmConnection() }
+
+        // Whitelist management buttons
+        findViewById<Button>(R.id.btn_add_number).setOnClickListener { addPhoneNumber() }
+        findViewById<Button>(R.id.btn_manage_whitelist).setOnClickListener { showWhitelistDialog() }
+        findViewById<Button>(R.id.btn_clear_whitelist).setOnClickListener { clearWhitelist() }
+
+        // LLM Model management buttons
+        findViewById<Button>(R.id.btn_select_model).setOnClickListener { showModelSelectionDialog() }
+
+        // Update summaries initially
+        updateWhitelistSummary()
+        updateModelSummary()
     }
 
     private fun checkPermissions() {
@@ -167,7 +204,13 @@ class MainActivity : AppCompatActivity() {
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(
                     { messages ->
-                        Log.d(tag, "Received messages update: ${messages.size} messages")
+                        Log.d(tag, "📜 Received messages update: ${messages.size} messages")
+                        if (messages.isNotEmpty()) {
+                            Log.d(
+                                tag,
+                                "📜 Latest message: ${messages.first().phoneNumber} - ${messages.first().incomingSms}",
+                            )
+                        }
                         updateMessagesUI(messages)
                     },
                     { error ->
@@ -189,14 +232,14 @@ class MainActivity : AppCompatActivity() {
                             Log.e(tag, "Network check failed", e)
                             false
                         }
-                    val isGptApiReachable = gptClient.isApiKeyConfigured()
+                    val isLlmApiReachable = llmModelManager.isConfigured()
 
-                    isNetworkAvailable to isGptApiReachable
+                    isNetworkAvailable to isLlmApiReachable
                 }
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(
-                    { (isNetworkAvailable: Boolean, isGptApiReachable: Boolean) ->
-                        updateStatusUI(isNetworkAvailable, isGptApiReachable)
+                    { (isNetworkAvailable: Boolean, isLlmApiReachable: Boolean) ->
+                        updateStatusUI(isNetworkAvailable, isLlmApiReachable)
                     },
                     { error ->
                         Log.e(tag, "Error checking status", error)
@@ -223,9 +266,9 @@ class MainActivity : AppCompatActivity() {
 
     private fun updateStatusUI(
         isNetworkAvailable: Boolean,
-        isGptApiReachable: Boolean,
+        isLlmApiReachable: Boolean,
     ) {
-        statusGpt.text = if (isGptApiReachable) "✅ GPT API" else "❌ GPT API"
+        statusLlm.text = if (isLlmApiReachable) "✅ LLM API" else "❌ LLM API"
         statusNetwork.text = if (isNetworkAvailable) "✅ NETWORK" else "❌ NETWORK"
     }
 
@@ -268,7 +311,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun clearLog() {
         showConfirmDialog(
-            title = "CLEAR LOG",
+            title = "CLEAR MESSAGE HISTORY",
             message = "Delete all message history?",
             positiveText = "DELETE",
             onConfirm = {
@@ -286,26 +329,26 @@ class MainActivity : AppCompatActivity() {
         showMonochromeToast("SERVICE RESTARTED")
     }
 
-    private fun testGptConnection() {
+    private fun testLlmConnection() {
         lifecycleScope.launch(Dispatchers.IO) {
             try {
                 withContext(Dispatchers.Main) {
-                    showMonochromeToast("TESTING GPT...")
+                    showMonochromeToast("🧪 TESTING LLM...")
                 }
 
-                Log.d(tag, "Starting GPT connection test...")
-                val isConnected = gptClient.testConnection()
-                Log.d(tag, "GPT connection test result: $isConnected")
+                Log.d(tag, "🗣️ Starting LLM connection test...")
+                val isConnected = llmModelManager.testConnection()
+                Log.d(tag, "🎆 LLM connection test result: $isConnected")
 
                 withContext(Dispatchers.Main) {
-                    val message = if (isConnected) "✅ GPT CONNECTION OK" else "❌ GPT CONNECTION FAILED"
+                    val message = if (isConnected) "✅ LLM CONNECTION OK" else "❌ LLM CONNECTION FAILED"
                     showMonochromeToast(message)
                     // Status will update automatically via reactive streams
                 }
             } catch (e: Exception) {
-                Log.e(tag, "GPT connection test failed with exception: ${e.javaClass.simpleName}: ${e.message}", e)
+                Log.e(tag, "❌ LLM connection test failed with exception: ${e.javaClass.simpleName}: ${e.message}", e)
                 withContext(Dispatchers.Main) {
-                    showMonochromeToast("❌ GPT TEST FAILED: ${e.message}")
+                    showMonochromeToast("❌ LLM TEST FAILED: ${e.message}")
                     // Status will update automatically via reactive streams
                 }
             }
@@ -331,6 +374,124 @@ class MainActivity : AppCompatActivity() {
         Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
     }
 
+    // Whitelist Management Functions
+
+    private fun updateWhitelistSummary() {
+        whitelistSummary.text = whitelistManager.getWhitelistSummary()
+    }
+
+    private fun addPhoneNumber() {
+        val phoneNumber = editPhoneNumber.text.toString()
+
+        // Validate phone number
+        val validationError = whitelistManager.validatePhoneNumber(phoneNumber)
+        if (validationError != null) {
+            showMonochromeToast("❌ $validationError")
+            return
+        }
+
+        // Try to add the number
+        if (whitelistManager.addPhoneNumber(phoneNumber)) {
+            showMonochromeToast("✅ Added: $phoneNumber")
+            editPhoneNumber.setText("")
+            updateWhitelistSummary()
+        } else {
+            showMonochromeToast("⚠️ Number already exists")
+        }
+    }
+
+    private fun clearWhitelist() {
+        showConfirmDialog(
+            title = "CLEAR WHITELIST",
+            message = "Remove ALL allowed phone numbers? This will block all incoming SMS until you add new numbers.",
+            positiveText = "CLEAR ALL",
+            onConfirm = {
+                whitelistManager.saveAllowedNumbers("")
+                updateWhitelistSummary()
+                showMonochromeToast("🗑️ Whitelist cleared")
+            },
+        )
+    }
+
+    private fun showWhitelistDialog() {
+        val numbers = whitelistManager.getAllowedNumbers()
+
+        if (numbers.isEmpty()) {
+            showMonochromeToast("📝 No numbers in whitelist")
+            return
+        }
+
+        val numbersArray = numbers.toTypedArray()
+        val checkedItems = BooleanArray(numbers.size) { false }
+
+        AlertDialog.Builder(this, R.style.MonochromeAlertDialog)
+            .setTitle("MANAGE WHITELIST")
+            .setMultiChoiceItems(numbersArray, checkedItems) { _, which, isChecked ->
+                checkedItems[which] = isChecked
+            }
+            .setPositiveButton("DELETE SELECTED") { _, _ ->
+                val toDelete = mutableListOf<String>()
+                for (i in checkedItems.indices) {
+                    if (checkedItems[i]) {
+                        toDelete.add(numbersArray[i])
+                    }
+                }
+
+                if (toDelete.isNotEmpty()) {
+                    showConfirmDialog(
+                        title = "DELETE NUMBERS",
+                        message = "Delete ${toDelete.size} selected number(s)?",
+                        positiveText = "DELETE",
+                        onConfirm = {
+                            var deletedCount = 0
+                            for (number in toDelete) {
+                                if (whitelistManager.removePhoneNumber(number)) {
+                                    deletedCount++
+                                }
+                            }
+                            updateWhitelistSummary()
+                            showMonochromeToast("🗑️ Deleted $deletedCount number(s)")
+                        },
+                    )
+                } else {
+                    showMonochromeToast("No numbers selected")
+                }
+            }
+            .setNegativeButton("CANCEL", null)
+            .setCancelable(true)
+            .show()
+    }
+
+    // LLM Model Management Functions
+    private fun updateModelSummary() {
+        modelSummary.text = llmModelManager.getModelSummary()
+    }
+
+    private fun showModelSelectionDialog() {
+        val models = llmModelManager.getAvailableModels()
+        val currentModel = llmModelManager.getSelectedModel()
+
+        var selectedIndex = models.indexOf(currentModel)
+        if (selectedIndex == -1) selectedIndex = 0
+
+        AlertDialog.Builder(this, R.style.MonochromeAlertDialog)
+            .setTitle("🤖 SELECT MODEL")
+            .setSingleChoiceItems(models.toTypedArray(), selectedIndex) { _, which ->
+                selectedIndex = which
+            }
+            .setPositiveButton("SELECT") { _, _ ->
+                if (selectedIndex >= 0 && selectedIndex < models.size) {
+                    val selectedModel = models[selectedIndex]
+                    llmModelManager.setSelectedModel(selectedModel)
+                    updateModelSummary()
+                    showMonochromeToast("🤖 Selected: $selectedModel")
+                }
+            }
+            .setNegativeButton("CANCEL", null)
+            .setCancelable(true)
+            .show()
+    }
+
     override fun onResume() {
         super.onResume()
         // Reactive streams will automatically update the UI
@@ -350,8 +511,8 @@ class MainActivity : AppCompatActivity() {
                 TextView(context).apply {
                     text = getItem(position)
                     setTextColor(ContextCompat.getColor(context, R.color.text_primary))
-                    setBackgroundColor(ContextCompat.getColor(context, R.color.surface_color))
-                    textSize = 14f
+                    setBackgroundColor(ContextCompat.getColor(context, R.color.gray2))
+                    textSize = 12f
                     typeface = android.graphics.Typeface.MONOSPACE
                     setPadding(16, 12, 16, 12)
                     maxLines = 3

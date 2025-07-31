@@ -85,6 +85,15 @@ class MessageRepository(context: Context) {
     }
 
     /**
+     * Get message by ID
+     */
+    suspend fun getMessageById(id: Long): Message? {
+        return withContext(Dispatchers.IO) {
+            messageDao.getMessageById(id)
+        }
+    }
+
+    /**
      * Clear all messages
      */
     suspend fun clearAllMessages() {

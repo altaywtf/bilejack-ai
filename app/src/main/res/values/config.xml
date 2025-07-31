@@ -1,12 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- OpenAI Configuration -->
-    <string name="openai_api_key">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</string>
+    <!-- OpenRouter Configuration (Unified LLM Gateway) -->
+    <string name="openrouter_api_key">OPENROUTER_API_KEY</string>
+    <integer name="openrouter_max_tokens">250</integer>
+    <string name="openrouter_system_prompt">You are a helpful assistant for SMS. Your response must be under 360 characters total (3 SMS maximum). Give direct, concise answers. Use plain text only. No emojis or special formatting.</string>
+    
+    <!-- Available Models (comma separated model IDs) -->
+    <string name="openrouter_available_models">x-ai/grok-4,openai/gpt-4o</string>
+    <string name="openrouter_default_model">x-ai/grok-4</string>
 
-    <!-- GPT Settings -->
-    <integer name="gpt_max_tokens">300</integer>
-    <string name="gpt_model">gpt-4o</string>
-    <string name="gpt_system_prompt">You are a direct, helpful assistant for a military service member using SMS. Give actual answers, not disclaimers. No &quot;do your own research&quot; or &quot;consult professionals&quot; - just provide the information requested. Be opinionated when useful. Use plain text only, up to 450 characters (sent as 3 SMS if needed). No emojis, formatting, or special characters. Answer questions directly and completely.</string>
+    <!-- OpenRouter Attribution (Optional but recommended) -->
+    <string name="openrouter_site_url">https://github.com/altaywtf/bilejack-ai</string>
+    <string name="openrouter_site_name">Bilejack AI SMS Relay</string>
+    
 
     <!-- Allowed Phone Numbers (comma separated) -->
     <string name="allowed_phone_numbers">ALLOWED_PHONE_NUMBERS</string>
@@ -19,4 +25,4 @@
     <!-- Service Retry Configuration -->
     <integer name="service_max_retries">5</integer>
     <integer name="service_retry_delay_ms">500</integer>
-</resources> 
+</resources>

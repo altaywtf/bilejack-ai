@@ -67,9 +67,9 @@
     
     <!-- Button Styles -->
     <style name="MonochromeButton" parent="Widget.Material3.Button">
-        <item name="backgroundTint">@color/surface_color</item>
+        <item name="backgroundTint">@color/surface_hover</item>
         <item name="android:textColor">@color/text_primary</item>
-        <item name="strokeColor">@color/very_light_gray</item>
+        <item name="strokeColor">@color/border_interactive</item>
         <item name="strokeWidth">1dp</item>
     </style>
     
