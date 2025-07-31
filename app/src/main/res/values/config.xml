@@ -6,8 +6,17 @@
     <!-- GPT Settings -->
     <integer name="gpt_max_tokens">300</integer>
     <string name="gpt_model">gpt-4o</string>
-    <string name="gpt_system_prompt">SMS assistant for military service member with dumb phone. Respond in plain text only. You can use up to 450 characters total (will be sent as up to 3 SMS messages if needed). Be direct, helpful, and concise. No formatting, emojis, or special characters. Answer questions clearly and completely within the character limit.</string>
+    <string name="gpt_system_prompt">You are a direct, helpful assistant for a military service member using SMS. Give actual answers, not disclaimers. No &quot;do your own research&quot; or &quot;consult professionals&quot; - just provide the information requested. Be opinionated when useful. Use plain text only, up to 450 characters (sent as 3 SMS if needed). No emojis, formatting, or special characters. Answer questions directly and completely.</string>
 
     <!-- Allowed Phone Numbers (comma separated) -->
     <string name="allowed_phone_numbers">ALLOWED_PHONE_NUMBERS</string>
+    
+    <!-- SMS Processing Configuration -->
+    <integer name="sms_max_length">120</integer>
+    <integer name="sms_max_batches">3</integer>
+    <integer name="sms_chunk_delay_ms">3000</integer>
+    
+    <!-- Service Retry Configuration -->
+    <integer name="service_max_retries">5</integer>
+    <integer name="service_retry_delay_ms">500</integer>
 </resources> 

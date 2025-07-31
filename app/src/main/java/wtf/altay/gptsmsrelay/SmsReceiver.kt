@@ -30,11 +30,11 @@ class SmsReceiver : BroadcastReceiver() {
                 val phoneNumber = smsMessage.originatingAddress ?: continue
                 val messageBody = smsMessage.messageBody ?: continue
 
-                Log.d(tag, "Received SMS from $phoneNumber: $messageBody")
+                Log.d(tag, "📨 Received SMS from $phoneNumber") // Don't log content here to avoid duplication
 
                 // Check if phone number is in whitelist
                 if (!isPhoneNumberAllowed(context, phoneNumber)) {
-                    Log.w(tag, "Phone number $phoneNumber not in whitelist, ignoring SMS")
+                    Log.w(tag, "🚫 Phone number $phoneNumber not in whitelist, ignoring SMS")
                     continue
                 }
 
@@ -45,23 +45,25 @@ class SmsReceiver : BroadcastReceiver() {
                 // Process message with retry logic for service availability
                 CoroutineScope(Dispatchers.IO).launch {
                     var retries = 0
-                    val maxRetries = 5
+                    val maxRetries = context.resources.getInteger(R.integer.service_max_retries)
+                    val retryDelay = context.resources.getInteger(R.integer.service_retry_delay_ms).toLong()
                     
                     while (retries < maxRetries) {
                         val serviceInstance = SmsRelayService.getInstance()
+                        
                         if (serviceInstance != null) {
                             serviceInstance.processIncomingSms(phoneNumber, messageBody)
-                            Log.d(tag, "Processed SMS through service instance")
+                            Log.d(tag, "✅ SMS processed successfully")
                             break
                         } else {
                             retries++
-                            Log.w(tag, "Service instance not available, retry $retries/$maxRetries")
-                            delay(500) // Wait 500ms before retry
+                            Log.w(tag, "⏳ Service not ready, retry $retries/$maxRetries")
+                            delay(retryDelay)
                         }
                     }
                     
                     if (retries >= maxRetries) {
-                        Log.e(tag, "Failed to process SMS - service not available after $maxRetries retries")
+                        Log.e(tag, "❌ Failed to process SMS - service unavailable after $maxRetries retries")
                     }
                 }
             }
@@ -77,7 +79,7 @@ class SmsReceiver : BroadcastReceiver() {
         try {
             val allowedNumbers = context.getString(R.string.allowed_phone_numbers)
             if (allowedNumbers.isBlank() || allowedNumbers == "your_phone_numbers_here") {
-                Log.w(tag, "No phone numbers configured in whitelist")
+                Log.w(tag, "🚫 No phone numbers configured in whitelist")
                 return false
             }
 
@@ -86,12 +88,12 @@ class SmsReceiver : BroadcastReceiver() {
             // Check if the incoming number matches any in the whitelist
             for (allowedNumber in phoneList) {
                 if (phoneNumber.contains(allowedNumber) || allowedNumber.contains(phoneNumber)) {
-                    Log.d(tag, "Phone number $phoneNumber matches whitelist entry: $allowedNumber")
+                    Log.d(tag, "✅ Phone number $phoneNumber matches whitelist entry: $allowedNumber")
                     return true
                 }
             }
 
-            Log.w(tag, "Phone number $phoneNumber not found in whitelist: $phoneList")
+            Log.w(tag, "🚫 Phone number $phoneNumber not found in whitelist: $phoneList")
             return false
         } catch (e: Exception) {
             Log.e(tag, "Error checking phone number whitelist", e)

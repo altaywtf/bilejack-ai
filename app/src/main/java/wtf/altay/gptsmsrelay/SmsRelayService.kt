@@ -6,7 +6,6 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
-import android.content.SharedPreferences
 import android.os.IBinder
 import android.telephony.SmsManager
 import android.telephony.SubscriptionManager
@@ -29,12 +28,8 @@ class SmsRelayService : LifecycleService() {
     private var subscriptionId: Int = -1
     private var selectedCarrierName: String = "Unknown"
     
-    // Simple in-memory tracking - no database bullshit
-    private val processedMessages = mutableSetOf<String>() // phone_number:message_hash
+    // Simple in-memory tracking - NO persistence bullshit
     private val currentlyProcessing = mutableSetOf<String>()
-    
-    // Lightweight crash-resilient state
-    private lateinit var prefs: SharedPreferences
 
     companion object {
         @Volatile
@@ -48,7 +43,6 @@ class SmsRelayService : LifecycleService() {
         instance = this
 
         gptClient = GptClient(this)
-        prefs = getSharedPreferences("sms_relay_state", Context.MODE_PRIVATE)
 
         // Setup SIM management
         setupSmsManager()
@@ -56,163 +50,58 @@ class SmsRelayService : LifecycleService() {
         createNotificationChannel()
         startForeground(notificationId, createNotification())
 
-        Log.d(tag, "Service created with SIM: $selectedCarrierName (ID: $subscriptionId)")
-        
-        // Clear any stuck processing state from crashes
-        clearStuckProcessingState()
+        Log.d(tag, "🚀 Service created with SIM: $selectedCarrierName (ID: $subscriptionId)")
     }
 
-    private fun clearStuckProcessingState() {
-        val stuckMessages = prefs.getStringSet("processing", emptySet()) ?: emptySet()
-        if (stuckMessages.isNotEmpty()) {
-            Log.d(tag, "Clearing ${stuckMessages.size} stuck processing messages from previous crash")
-            prefs.edit().remove("processing").apply()
-        }
-        
-        // Restore processed messages to avoid reprocessing
-        val processedFromPrefs = prefs.getStringSet("processed", emptySet()) ?: emptySet()
-        processedMessages.addAll(processedFromPrefs)
-        Log.d(tag, "Restored ${processedFromPrefs.size} previously processed messages")
-        
-        // Clean up old processed messages (keep only last 100 to prevent memory bloat)
-        if (processedMessages.size > 100) {
-            val toRemove = processedMessages.drop(processedMessages.size - 100)
-            processedMessages.removeAll(toRemove.toSet())
-            prefs.edit().putStringSet("processed", processedMessages).apply()
-            Log.d(tag, "Cleaned up old processed messages, kept ${processedMessages.size}")
-        }
-    }
-
-    // Called by SmsReceiver with the incoming message
+    // Called by SmsReceiver - SYNCHRONOUS processing
     fun processIncomingSms(phoneNumber: String, messageBody: String) {
         val messageKey = "$phoneNumber:${messageBody.hashCode()}"
         
-        synchronized(this) {
-            if (processedMessages.contains(messageKey) || currentlyProcessing.contains(messageKey)) {
-                Log.d(tag, "Message already processed or processing: $messageKey")
-                return
-            }
-            currentlyProcessing.add(messageKey)
-            
-            // Track in crash-resilient storage
-            val processing = prefs.getStringSet("processing", emptySet())?.toMutableSet() ?: mutableSetOf()
-            processing.add(messageKey)
-            prefs.edit().putStringSet("processing", processing).apply()
+        Log.d(tag, "📨 Processing SMS: $messageKey")
+        
+        // Simple duplicate check - in memory only
+        if (currentlyProcessing.contains(messageKey)) {
+            Log.w(tag, "🚫 Already processing this message, skipping: $messageKey")
+            return
         }
+        
+        currentlyProcessing.add(messageKey)
 
-        // Process on background thread to prevent ANR
+        // Process synchronously on background thread
         lifecycleScope.launch(Dispatchers.IO) {
             try {
-                Log.d(tag, "Processing SMS from $phoneNumber: $messageBody")
-
-                // Get GPT response
+                Log.d(tag, "🤖 Calling GPT for: $messageKey")
                 val gptResponse = gptClient.sendMessage(messageBody)
 
-                Log.d(tag, "GPT response: $gptResponse")
-
-                // Switch back to main thread for UI updates but keep SMS sending on background
-                withContext(Dispatchers.Main) {
-                    Log.d(tag, "Starting SMS sending process")
-                }
-
-                // Brief pause to ensure system is ready
-                Log.d(tag, "Waiting 1 second before starting SMS sending...")
-                delay(1000)
-
-                // Split and send SMS chunks (stay on IO thread)
+                // Split and send SMS chunks with delays
                 val smsChunks = splitMessageForSms(gptResponse)
-                Log.d(tag, "📤 Ready to send ${smsChunks.size} SMS chunks to $phoneNumber")
-                
-                // Log all chunks that will be sent
-                smsChunks.forEachIndexed { index, chunk ->
-                    Log.d(tag, "📋 Chunk ${index + 1}/${smsChunks.size} prepared (${chunk.length} chars): $chunk")
-                }
+                Log.d(tag, "📤 Sending ${smsChunks.size} SMS chunks")
 
-                var successfulChunks = 0
-                var failedChunks = 0
+                val chunkDelay = resources.getInteger(R.integer.sms_chunk_delay_ms).toLong()
 
                 for ((index, chunk) in smsChunks.withIndex()) {
-                    try {
-                        Log.d(tag, "⏳ Attempting to send chunk ${index + 1}/${smsChunks.size}...")
-                        val startTime = System.currentTimeMillis()
-                        
-                        sendSmsMessage(phoneNumber, chunk)
-                        
-                        val endTime = System.currentTimeMillis()
-                        successfulChunks++
-                        
-                        Log.d(tag, "✅ Chunk ${index + 1}/${smsChunks.size} sent successfully in ${endTime - startTime}ms")
-                        
-                        // Add delay between chunks to prevent rate limiting (except for last chunk)
-                        if (index < smsChunks.size - 1) {
-                            Log.d(tag, "⏱️ Waiting 2 seconds before sending next chunk...")
-                            delay(2000) // 2 second delay between chunks
-                        }
-                        
-                    } catch (chunkError: Exception) {
-                        failedChunks++
-                        Log.e(tag, "❌ CHUNK ${index + 1}/${smsChunks.size} FAILED: ${chunkError.message}", chunkError)
-                        
-                        // Continue with other chunks even if one fails
-                        try {
-                            Log.d(tag, "🚨 Sending error notification for failed chunk ${index + 1}")
-                            sendSmsMessage(phoneNumber, "Error: Failed to send message part ${index + 1}/${smsChunks.size}")
-                        } catch (errorSmsError: Exception) {
-                            Log.e(tag, "Failed to send error notification for chunk ${index + 1}", errorSmsError)
-                        }
+                    sendSmsMessage(phoneNumber, chunk)
+                    Log.d(tag, "✅ Sent chunk ${index + 1}/${smsChunks.size}")
+                    
+                    // Delay between chunks to prevent rate limiting
+                    if (index < smsChunks.size - 1) {
+                        delay(chunkDelay)
                     }
                 }
 
-                Log.d(tag, "📊 SMS BATCH COMPLETE: $successfulChunks✅ successful, $failedChunks❌ failed out of ${smsChunks.size} total chunks")
-
-                // Mark as completed even if some chunks failed (to prevent reprocessing)
-                // but log the outcome clearly
-                val processingResult = when {
-                    failedChunks == 0 -> "FULLY_SUCCESSFUL"
-                    successfulChunks > 0 -> "PARTIALLY_SUCCESSFUL"
-                    else -> "COMPLETELY_FAILED"
-                }
-                
-                Log.d(tag, "📋 Message processing result: $processingResult")
-
-                synchronized(this@SmsRelayService) {
-                    processedMessages.add(messageKey)
-                    currentlyProcessing.remove(messageKey)
-                    
-                    // Remove from crash-resilient storage and add to processed
-                    val processing = prefs.getStringSet("processing", emptySet())?.toMutableSet() ?: mutableSetOf()
-                    processing.remove(messageKey)
-                    
-                    val processed = prefs.getStringSet("processed", emptySet())?.toMutableSet() ?: mutableSetOf()
-                    processed.add(messageKey)
-                    
-                    prefs.edit()
-                        .putStringSet("processing", processing)
-                        .putStringSet("processed", processed)
-                        .apply()
-                }
-
-                Log.d(tag, "✅ Message from $phoneNumber marked as processed ($processingResult)")
+                Log.d(tag, "🎉 All chunks sent successfully for: $messageKey")
 
             } catch (e: Exception) {
-                Log.e(tag, "💥 FATAL ERROR processing message from $phoneNumber", e)
-
-                // Only send error SMS if we haven't sent any chunks yet
+                Log.e(tag, "❌ Error processing $messageKey: ${e.message}", e)
+                
                 try {
-                    Log.d(tag, "🚨 Sending generic error SMS due to fatal processing error")
-                    sendSmsMessage(phoneNumber, "Error: Unable to process your message. Please try again later.")
+                    sendSmsMessage(phoneNumber, "Error: Unable to process your message.")
                 } catch (smsError: Exception) {
                     Log.e(tag, "Failed to send error SMS", smsError)
                 }
-
-                synchronized(this@SmsRelayService) {
-                    currentlyProcessing.remove(messageKey)
-                    
-                    // Remove from crash-resilient storage (don't mark as processed since it truly failed)
-                    val processing = prefs.getStringSet("processing", emptySet())?.toMutableSet() ?: mutableSetOf()
-                    processing.remove(messageKey)
-                    prefs.edit().putStringSet("processing", processing).apply()
-                }
+            } finally {
+                // Always clean up
+                currentlyProcessing.remove(messageKey)
             }
         }
     }
@@ -222,14 +111,14 @@ class SmsRelayService : LifecycleService() {
             val subscriptionManager = getSystemService(Context.TELEPHONY_SUBSCRIPTION_SERVICE) as SubscriptionManager
             val subscriptions = subscriptionManager.activeSubscriptionInfoList
 
-            Log.d(tag, "Found ${subscriptions?.size ?: 0} active SIM cards")
+            Log.d(tag, "📱 Found ${subscriptions?.size ?: 0} active SIM cards")
 
             if (subscriptions != null && subscriptions.isNotEmpty()) {
                 // Log all available SIMs for debugging
                 subscriptions.forEachIndexed { index, sub ->
                     Log.d(
                         tag,
-                        "SIM $index: Carrier='${sub.carrierName}', " +
+                        "📋 SIM $index: Carrier='${sub.carrierName}', " +
                             "Display='${sub.displayName}', ID=${sub.subscriptionId}",
                     )
                 }
@@ -240,8 +129,6 @@ class SmsRelayService : LifecycleService() {
                         val carrierName = sub.carrierName?.toString()?.lowercase() ?: ""
                         val displayName = sub.displayName?.toString()?.lowercase() ?: ""
 
-                        Log.d(tag, "Checking SIM - Carrier: '$carrierName', Display: '$displayName'")
-
                         carrierName.contains("turkcell") ||
                             displayName.contains("turkcell") ||
                             carrierName.contains("tcell") ||
@@ -249,7 +136,7 @@ class SmsRelayService : LifecycleService() {
                     }
 
                 if (turkcellSim != null) {
-                    Log.d(tag, "Found Turkcell SIM: ${turkcellSim.carrierName}")
+                    Log.d(tag, "✅ Found Turkcell SIM: ${turkcellSim.carrierName}")
                     subscriptionId = turkcellSim.subscriptionId
                     selectedCarrierName = turkcellSim.carrierName?.toString() ?: "Turkcell"
                     preferredSmsManager = SmsManager.getSmsManagerForSubscriptionId(subscriptionId)
@@ -261,18 +148,18 @@ class SmsRelayService : LifecycleService() {
                         ?: "SIM ${subscriptions.indexOf(selectedSim) + 1}"
                     preferredSmsManager = SmsManager.getSmsManagerForSubscriptionId(subscriptionId)
 
-                    Log.w(tag, "Turkcell SIM not found, using: $selectedCarrierName (ID: $subscriptionId)")
+                    Log.w(tag, "⚠️ Turkcell SIM not found, using: $selectedCarrierName (ID: $subscriptionId)")
                 }
 
-                Log.d(tag, "Selected SIM: $selectedCarrierName (ID: $subscriptionId)")
+                Log.d(tag, "📱 Selected SIM: $selectedCarrierName (ID: $subscriptionId)")
             } else {
                 // Fallback to default SMS manager
                 preferredSmsManager = SmsManager.getDefault()
                 selectedCarrierName = "Default"
-                Log.w(tag, "No SIM cards found, using default SMS manager")
+                Log.w(tag, "⚠️ No SIM cards found, using default SMS manager")
             }
         } catch (e: Exception) {
-            Log.e(tag, "Error setting up SMS manager", e)
+            Log.e(tag, "❌ Error setting up SMS manager", e)
             preferredSmsManager = SmsManager.getDefault()
             selectedCarrierName = "Default"
         }
@@ -284,7 +171,7 @@ class SmsRelayService : LifecycleService() {
         startId: Int,
     ): Int {
         super.onStartCommand(intent, flags, startId)
-        Log.d(tag, "Service started")
+        Log.d(tag, "🔄 Service started")
         return START_STICKY // Restart if killed
     }
 
@@ -296,7 +183,7 @@ class SmsRelayService : LifecycleService() {
     override fun onDestroy() {
         super.onDestroy()
         instance = null
-        Log.d(tag, "Service destroyed")
+        Log.d(tag, "🛑 Service destroyed")
     }
 
     private fun createNotificationChannel() {
@@ -345,16 +232,8 @@ class SmsRelayService : LifecycleService() {
             if (message.isBlank()) {
                 throw IllegalArgumentException("Message cannot be blank")
             }
-            if (message.length > 160) {
-                Log.w(tag, "📱 WARNING: Message length (${message.length}) exceeds typical SMS limit (160)")
-            }
-            
-            Log.d(tag, "📱 Preparing to send SMS to $phoneNumber (${message.length} chars)")
-            Log.d(tag, "📱 SMS content: $message")
             
             if (preferredSmsManager != null) {
-                Log.d(tag, "📱 Using preferred SIM: $selectedCarrierName (ID: $subscriptionId)")
-                
                 preferredSmsManager!!.sendTextMessage(
                     phoneNumber,
                     null,
@@ -362,11 +241,8 @@ class SmsRelayService : LifecycleService() {
                     null, // sentIntent - could add for delivery confirmation
                     null, // deliveryIntent
                 )
-                
-                Log.d(tag, "📱 SMS dispatch successful via $selectedCarrierName")
+                Log.d(tag, "📱 SMS sent via $selectedCarrierName")
             } else {
-                Log.d(tag, "📱 Using default SMS manager")
-                
                 SmsManager.getDefault().sendTextMessage(
                     phoneNumber,
                     null,
@@ -374,14 +250,11 @@ class SmsRelayService : LifecycleService() {
                     null,
                     null,
                 )
-                
-                Log.d(tag, "📱 SMS dispatch successful via default SIM")
+                Log.d(tag, "📱 SMS sent via default SIM")
             }
             
-            Log.d(tag, "📱 SMS sent successfully to $phoneNumber")
-            
         } catch (e: Exception) {
-            Log.e(tag, "📱 SMS SEND FAILED to $phoneNumber: ${e.javaClass.simpleName}: ${e.message}", e)
+            Log.e(tag, "❌ SMS send failed to $phoneNumber: ${e.message}", e)
             
             // Log more details about the error
             when (e) {
@@ -394,50 +267,23 @@ class SmsRelayService : LifecycleService() {
         }
     }
 
-    // Debug method to test SMS sending
-    fun testSmsSending(phoneNumber: String) {
-        lifecycleScope.launch(Dispatchers.IO) {
-            try {
-                Log.d(tag, "🧪 Testing SMS sending capability...")
-                
-                val testMessages = listOf(
-                    "Test 1/3: First test message",
-                    "Test 2/3: Second test message", 
-                    "Test 3/3: Third test message"
-                )
-                
-                for ((index, testMsg) in testMessages.withIndex()) {
-                    Log.d(tag, "🧪 Sending test message ${index + 1}/3...")
-                    sendSmsMessage(phoneNumber, testMsg)
-                    Log.d(tag, "🧪 Test message ${index + 1}/3 sent successfully")
-                    
-                    if (index < testMessages.size - 1) {
-                        delay(3000) // 3 second delay for testing
-                    }
-                }
-                
-                Log.d(tag, "🧪 SMS test completed successfully")
-            } catch (e: Exception) {
-                Log.e(tag, "🧪 SMS test failed", e)
-            }
-        }
-    }
-
     private fun splitMessageForSms(message: String): List<String> {
-        val maxLength = 150 // Leave some margin
-        val maxBatches = 3 // Limit to maximum 3 batches as requested
+        val maxLength = resources.getInteger(R.integer.sms_max_length)
+        val maxBatches = resources.getInteger(R.integer.sms_max_batches)
 
         if (message.length <= maxLength) {
             return listOf(message)
         }
 
-        // Calculate maximum allowed characters for 3 batches
-        // Account for the "(X/Y) " prefix which takes about 6 characters
-        val maxTotalChars = maxBatches * (maxLength - 6)
+        // Calculate prefix length dynamically based on max batches (e.g., "(3/3) " = 6 chars)
+        val prefixLength = "(${maxBatches}/${maxBatches}) ".length
+        
+        // Calculate maximum allowed characters for max batches
+        val maxTotalChars = maxBatches * (maxLength - prefixLength)
         
         val processedMessage = if (message.length > maxTotalChars) {
-            // Truncate and add indication
-            val truncated = message.substring(0, maxTotalChars - 20) // Leave space for truncation note
+            // Truncate and add indication (leave 20 chars for truncation note)
+            val truncated = message.substring(0, maxTotalChars - 20)
             "$truncated... [truncated]"
         } else {
             message
@@ -450,7 +296,7 @@ class SmsRelayService : LifecycleService() {
 
         while (remaining.isNotEmpty() && partNumber <= maxBatches) {
             // Reserve space for numbering like "(X/Y) "
-            val availableLength = maxLength - 6 // Reserve 6 chars for "(X/Y) "
+            val availableLength = maxLength - prefixLength
             
             val chunkSize = if (remaining.length > availableLength) {
                 // Find last space before availableLength to avoid cutting words
