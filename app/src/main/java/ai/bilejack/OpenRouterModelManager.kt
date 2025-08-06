@@ -10,7 +10,7 @@ class OpenRouterModelManager(private val context: Context) {
     private val openRouter = OpenRouterProvider(context)
 
     companion object {
-        private const val KEY_SELECTED_MODEL = "selected_model"
+        private const val KEY_SELECTED_MODEL = "selected_model_v2"
     }
 
     init {
@@ -18,8 +18,6 @@ class OpenRouterModelManager(private val context: Context) {
             val defaultModel = getDefaultModel()
             Log.d(tag, "Setting default model: $defaultModel")
             setSelectedModel(defaultModel)
-        } else {
-            openRouter.setSelectedModel(getSelectedModel())
         }
     }
 
@@ -34,7 +32,6 @@ class OpenRouterModelManager(private val context: Context) {
     fun setSelectedModel(modelId: String) {
         if (openRouter.getAvailableModels().contains(modelId)) {
             prefs.edit().putString(KEY_SELECTED_MODEL, modelId).apply()
-            openRouter.setSelectedModel(modelId)
             Log.d(tag, "💾 Selected LLM model: $modelId")
         } else {
             Log.e(tag, "❌ Attempted to select invalid model ID: $modelId")

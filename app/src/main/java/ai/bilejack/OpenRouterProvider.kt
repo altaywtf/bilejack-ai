@@ -27,6 +27,11 @@ class OpenRouterProvider(private val context: Context) {
     data class ChatRequest(
         val model: String,
         val messages: List<ChatMessage>,
+        val web_search_options: WebSearchOptions? = null,
+    )
+
+    data class WebSearchOptions(
+        val search_context_size: String,
     )
 
     data class ChatMessage(
@@ -59,15 +64,11 @@ class OpenRouterProvider(private val context: Context) {
         return context.getString(R.string.openrouter_api_key)
     }
 
-    fun setSelectedModel(modelId: String) {
-        selectedModel = modelId
-    }
-
-    private var selectedModel: String = ""
-
     private fun getModel(): String {
-        return if (selectedModel.isNotBlank()) {
-            selectedModel
+        val prefs = context.getSharedPreferences("bilejack_llm", Context.MODE_PRIVATE)
+        val savedModel = prefs.getString("selected_model_v2", "") ?: ""
+        return if (savedModel.isNotBlank()) {
+            savedModel
         } else {
             context.getString(R.string.openrouter_default_model)
         }
@@ -75,6 +76,10 @@ class OpenRouterProvider(private val context: Context) {
 
     private fun getSystemPrompt(): String {
         return context.getString(R.string.openrouter_system_prompt)
+    }
+
+    private fun getWebSearchContextSize(): String {
+        return context.getString(R.string.openrouter_web_search_context_size)
     }
 
     suspend fun sendMessage(userMessage: String): String {
@@ -92,12 +97,11 @@ class OpenRouterProvider(private val context: Context) {
                         listOf(
                             ChatMessage(
                                 "system",
-                                "${getSystemPrompt()}\n\nREMINDER: Keep it SHORT! " +
-                                    "Respond with plain text only, " +
-                                    "no web searches, no citations, no annotations, no tools.",
+                                getSystemPrompt(),
                             ),
                             ChatMessage("user", userMessage),
                         ),
+                    web_search_options = WebSearchOptions(getWebSearchContextSize()), // TODO: Make this dynamic
                 )
 
             Log.d(tag, "🤖 Sending request to OpenRouter with model: ${getModel()}")

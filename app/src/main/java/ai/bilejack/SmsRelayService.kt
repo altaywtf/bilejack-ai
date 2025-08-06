@@ -27,13 +27,11 @@ class SmsRelayService : LifecycleService() {
     private var subscriptionId: Int = -1
     private var selectedCarrierName: String = "Unknown"
 
-    // Simple in-memory tracking - NO persistence bullshit
     private val currentlyProcessing = mutableSetOf<String>()
 
     companion object {
         @Volatile
         private var instance: SmsRelayService? = null
-
         fun getInstance(): SmsRelayService? = instance
     }
 
@@ -146,7 +144,6 @@ class SmsRelayService : LifecycleService() {
 
                 Log.d(tag, "📱 Selected SIM: $selectedCarrierName (ID: $subscriptionId)")
             } else {
-                // Fallback to default SMS manager
                 preferredSmsManager = SmsManager.getDefault()
                 selectedCarrierName = "Default"
                 Log.w(tag, "⚠️ No SIM cards found, using default SMS manager")
@@ -218,23 +215,14 @@ class SmsRelayService : LifecycleService() {
         message: String,
     ) {
         try {
-            // Validate inputs before sending
             if (phoneNumber.isBlank()) {
                 throw IllegalArgumentException("Phone number cannot be blank")
             }
+            
             if (message.isBlank()) {
                 throw IllegalArgumentException("Message cannot be blank")
             }
 
-            // DEBUG MODE: Log SMS content instead of actually sending
-            Log.d(tag, "🚧 DEBUG MODE - SMS Content:")
-            Log.d(tag, "📱 To: $phoneNumber")
-            Log.d(tag, "🔌 Via: ${if (preferredSmsManager != null) selectedCarrierName else "Default SIM"}")
-            Log.d(tag, "💬 Message: $message")
-            Log.d(tag, "📏 Length: ${message.length} characters")
-            Log.d(tag, "🚧 SMS NOT ACTUALLY SENT (Debug Mode)")
-
-            /*
             if (preferredSmsManager != null) {
                 preferredSmsManager!!.sendTextMessage(
                     phoneNumber,
@@ -254,7 +242,6 @@ class SmsRelayService : LifecycleService() {
                 )
                 Log.d(tag, "📱 SMS sent via default SIM")
             }
-             */
         } catch (e: Exception) {
             Log.e(tag, "❌ SMS processing failed for $phoneNumber: ${e.message}", e)
 
