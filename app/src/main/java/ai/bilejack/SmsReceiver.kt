@@ -1,7 +1,5 @@
 package ai.bilejack
 
-import ai.bilejack.data.Message
-import ai.bilejack.data.MessageRepository
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -32,37 +30,19 @@ class SmsReceiver : BroadcastReceiver() {
                 val phoneNumber = smsMessage.originatingAddress ?: continue
                 val messageBody = smsMessage.messageBody ?: continue
 
-                Log.d(tag, "📨 Received SMS from $phoneNumber") // Don't log content here to avoid duplication
+                Log.d(tag, "📨 Received SMS from $phoneNumber")
 
-                // Check if phone number is in whitelist
-                val whitelistManager = WhitelistManager(context)
-                if (!whitelistManager.isPhoneNumberAllowed(phoneNumber)) {
-                    Log.w(tag, "🚫 Phone number $phoneNumber not in whitelist, ignoring SMS")
+                val whitelistedNumbersManager = WhitelistedNumbersManager(context)
+                if (!whitelistedNumbersManager.isPhoneNumberAllowed(phoneNumber)) {
+                    Log.w(tag, "🚫 Phone number $phoneNumber not whitelisted, ignoring SMS")
                     continue
                 }
 
-                // Save message to database
-                val messageRepository = MessageRepository(context)
-                val message =
-                    Message(
-                        phoneNumber = phoneNumber,
-                        incomingSms = messageBody,
-                        isProcessed = false,
-                        isProcessing = false,
-                    )
-
-                // Start service if not running
                 val serviceIntent = Intent(context, SmsRelayService::class.java)
                 context.startForegroundService(serviceIntent)
 
-                // Save message to database and process it
                 CoroutineScope(Dispatchers.IO).launch {
                     try {
-                        // Save to database first
-                        val messageId = messageRepository.insertMessage(message)
-                        Log.d(tag, "💾 Message saved to database with ID: $messageId")
-
-                        // Then process with service
                         var retries = 0
                         val maxRetries = context.resources.getInteger(R.integer.service_max_retries)
                         val retryDelay = context.resources.getInteger(R.integer.service_retry_delay_ms).toLong()
@@ -71,7 +51,7 @@ class SmsReceiver : BroadcastReceiver() {
                             val serviceInstance = SmsRelayService.getInstance()
 
                             if (serviceInstance != null) {
-                                serviceInstance.processIncomingSms(phoneNumber, messageBody, messageId)
+                                serviceInstance.processIncomingSms(phoneNumber, messageBody)
                                 Log.d(tag, "✅ SMS processed successfully")
                                 break
                             } else {
@@ -85,7 +65,7 @@ class SmsReceiver : BroadcastReceiver() {
                             Log.e(tag, "❌ Failed to process SMS - service unavailable after $maxRetries retries")
                         }
                     } catch (e: Exception) {
-                        Log.e(tag, "❌ Error saving message to database", e)
+                        Log.e(tag, "❌ Error processing SMS", e)
                     }
                 }
             }

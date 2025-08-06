@@ -1,15 +1,11 @@
 package ai.bilejack
 
-import ai.bilejack.llm.OpenRouterProvider
 import android.content.Context
 import android.content.SharedPreferences
 import android.util.Log
 
-/**
- * Simple model manager for OpenRouter
- */
-class LlmModelManager(private val context: Context) {
-    private val tag = "LlmModelManager"
+class OpenRouterModelManager(private val context: Context) {
+    private val tag = "OpenRouterModelManager"
     private val prefs: SharedPreferences = context.getSharedPreferences("bilejack_llm", Context.MODE_PRIVATE)
     private val openRouter = OpenRouterProvider(context)
 
@@ -23,7 +19,6 @@ class LlmModelManager(private val context: Context) {
             Log.d(tag, "Setting default model: $defaultModel")
             setSelectedModel(defaultModel)
         } else {
-            // Set the already selected model in OpenRouter
             openRouter.setSelectedModel(getSelectedModel())
         }
     }
@@ -39,7 +34,7 @@ class LlmModelManager(private val context: Context) {
     fun setSelectedModel(modelId: String) {
         if (openRouter.getAvailableModels().contains(modelId)) {
             prefs.edit().putString(KEY_SELECTED_MODEL, modelId).apply()
-            openRouter.setSelectedModel(modelId) // Update OpenRouter with selected model
+            openRouter.setSelectedModel(modelId)
             Log.d(tag, "💾 Selected LLM model: $modelId")
         } else {
             Log.e(tag, "❌ Attempted to select invalid model ID: $modelId")

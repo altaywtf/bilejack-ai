@@ -2,24 +2,18 @@
 <resources>
     <!-- OpenRouter Configuration (Unified LLM Gateway) -->
     <string name="openrouter_api_key">OPENROUTER_API_KEY</string>
-    <string name="openrouter_system_prompt">You are a helpful assistant for SMS. Your response must be under 360 characters total (3 SMS maximum). Give direct, concise answers. Use plain text only. No emojis or special formatting.</string>
+    <string name="openrouter_system_prompt">You are a helpful assistant for SMS. Keep responses SHORT and concise - think tweet-length. Give direct, practical answers. Use plain text only, no emojis or special formatting.</string>
     
     <!-- Available Models (comma separated model IDs) -->
     <string name="openrouter_available_models">x-ai/grok-4,openai/gpt-4o</string>
     <string name="openrouter_default_model">x-ai/grok-4</string>
-
-    <!-- OpenRouter Attribution (Optional but recommended) -->
-    <string name="openrouter_site_url">https://github.com/altaywtf/bilejack-ai</string>
-    <string name="openrouter_site_name">Bilejack AI SMS Relay</string>
     
-
     <!-- Allowed Phone Numbers (comma separated) -->
     <string name="allowed_phone_numbers">ALLOWED_PHONE_NUMBERS</string>
     
     <!-- SMS Processing Configuration -->
-    <integer name="sms_max_length">120</integer>
-    <integer name="sms_max_batches">3</integer>
-    <integer name="sms_chunk_delay_ms">3000</integer>
+    <integer name="sms_max_length">140</integer>
+    <integer name="sms_chunk_delay_ms">2000</integer>
     
     <!-- Service Retry Configuration -->
     <integer name="service_max_retries">5</integer>

@@ -15,64 +15,7 @@
         android:paddingTop="56dp"
         android:paddingBottom="40dp">
 
-        <!-- Stats Section -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:layout_marginBottom="20dp"
-            android:background="@color/surface_color"
-            android:elevation="2dp"
-            android:padding="16dp">
-
-            <TextView
-                android:id="@+id/stats_received"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="📩 0"
-                android:textSize="18sp"
-                android:textColor="@color/text_primary"
-                android:gravity="center"
-                android:fontFamily="monospace" />
-
-            <View
-                android:layout_width="1dp"
-                android:layout_height="match_parent"
-                android:background="@color/border_subtle"
-                android:layout_marginHorizontal="8dp" />
-
-            <TextView
-                android:id="@+id/stats_sent"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="📤 0"
-                android:textSize="18sp"
-                android:textColor="@color/text_primary"
-                android:gravity="center"
-                android:fontFamily="monospace" />
-
-            <View
-                android:layout_width="1dp"
-                android:layout_height="match_parent"
-                android:background="@color/border_subtle"
-                android:layout_marginHorizontal="8dp" />
-
-            <TextView
-                android:id="@+id/stats_errors"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="❌ 0"
-                android:textSize="18sp"
-                android:textColor="@color/text_primary"
-                android:gravity="center"
-                android:fontFamily="monospace" />
-
-        </LinearLayout>
-
-        <!-- Status Section -->
+        <!-- Simple Status Section -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -286,48 +229,7 @@
 
         </LinearLayout>
 
-        <!-- Message History Section -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:background="@color/surface_color"
-            android:elevation="2dp"
-            android:padding="16dp">
 
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="📜 MESSAGE HISTORY"
-                android:textSize="16sp"
-                android:textStyle="bold"
-                android:textColor="@color/text_primary"
-                android:layout_marginBottom="12dp"
-                android:fontFamily="monospace" />
-
-            <!-- Message List -->
-            <ListView
-                android:id="@+id/messages_list"
-                android:layout_width="match_parent"
-                android:layout_height="300dp"
-                android:background="@color/gray2"
-                android:divider="@color/border_subtle"
-                android:dividerHeight="1dp"
-                android:padding="8dp"
-                android:layout_marginBottom="12dp" />
-
-            <!-- Clear Message History Button -->
-            <Button
-                android:id="@+id/btn_clear_log"
-                android:layout_width="match_parent"
-                android:layout_height="48dp"
-                android:text="🗑️ CLEAR MESSAGE HISTORY"
-                android:backgroundTint="@color/error_red"
-                android:textColor="@color/white"
-                android:fontFamily="monospace"
-                android:textSize="12sp" />
-
-        </LinearLayout>
 
     </LinearLayout>
 

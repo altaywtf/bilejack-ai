@@ -1,7 +1,6 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
-    id("kotlin-kapt")
 }
 
 android {
@@ -46,17 +45,6 @@ dependencies {
     // JSON
     implementation(libs.moshi)
     implementation(libs.moshi.kotlin)
-
-    // Database
-    implementation(libs.room.runtime)
-    implementation(libs.room.ktx)
-    implementation(libs.room.rxjava3)
-    kapt(libs.room.compiler)
-
-    // RxJava
-    implementation("io.reactivex.rxjava3:rxjava:3.1.8")
-    implementation("io.reactivex.rxjava3:rxandroid:3.0.2")
-    implementation("com.jakewharton.rxbinding4:rxbinding:4.0.0")
 
     // Lifecycle
     implementation(libs.lifecycle.service)

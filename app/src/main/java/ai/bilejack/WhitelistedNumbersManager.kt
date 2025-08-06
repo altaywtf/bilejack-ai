@@ -4,8 +4,8 @@ import android.content.Context
 import android.content.SharedPreferences
 import android.util.Log
 
-class WhitelistManager(private val context: Context) {
-    private val tag = "WhitelistManager"
+class WhitelistedNumbersManager(private val context: Context) {
+    private val tag = "WhitelistedNumbersManager"
     private val prefs: SharedPreferences = context.getSharedPreferences("bilejack_whitelist", Context.MODE_PRIVATE)
 
     companion object {
@@ -13,9 +13,8 @@ class WhitelistManager(private val context: Context) {
     }
 
     init {
-        // Migrate from config.xml on first run if no numbers are stored
         if (getAllowedNumbers().isEmpty()) {
-            Log.d(tag, "🔄 Migrating whitelist from config.xml to SharedPreferences")
+            Log.d(tag, "🔄 Migrating phone numbers from config.xml to SharedPreferences")
             migrateFromConfig()
         }
     }
@@ -27,12 +26,13 @@ class WhitelistManager(private val context: Context) {
                 Log.d(tag, "📱 Migrating numbers from config: $configNumbers")
                 saveAllowedNumbers(configNumbers)
             } else {
-                Log.w(tag, "⚠️ No valid numbers in config.xml - whitelist will be empty until numbers are added via UI")
-                // Don't auto-populate - let user add numbers via UI
+                Log.w(
+                    tag,
+                    "⚠️ No valid numbers in config.xml - phone numbers will be empty until numbers are added via UI",
+                )
             }
         } catch (e: Exception) {
             Log.e(tag, "❌ Error migrating from config", e)
-            // Don't auto-populate on error - let user add numbers via UI
         }
     }
 
@@ -47,7 +47,7 @@ class WhitelistManager(private val context: Context) {
 
     fun saveAllowedNumbers(numbersString: String) {
         prefs.edit().putString(KEY_WHITELIST, numbersString).apply()
-        Log.d(tag, "💾 Saved whitelist: $numbersString")
+        Log.d(tag, "💾 Saved phone numbers: $numbersString")
     }
 
     fun addPhoneNumber(phoneNumber: String): Boolean {
@@ -59,9 +59,8 @@ class WhitelistManager(private val context: Context) {
 
         val currentNumbers = getAllowedNumbers().toMutableList()
 
-        // Check if already exists
         if (currentNumbers.any { normalizePhoneNumber(it) == normalizePhoneNumber(trimmed) }) {
-            Log.w(tag, "⚠️ Phone number $trimmed already in whitelist")
+            Log.w(tag, "⚠️ Phone number $trimmed already in allowed numbers")
             return false
         }
 
@@ -82,7 +81,7 @@ class WhitelistManager(private val context: Context) {
             Log.d(tag, "🗑️ Removed phone number: $trimmed")
             return true
         } else {
-            Log.w(tag, "⚠️ Phone number $trimmed not found in whitelist")
+            Log.w(tag, "⚠️ Phone number $trimmed not found in allowed numbers")
             return false
         }
     }
@@ -91,32 +90,29 @@ class WhitelistManager(private val context: Context) {
         val allowedNumbers = getAllowedNumbers()
 
         if (allowedNumbers.isEmpty()) {
-            Log.w(tag, "🚫 No phone numbers configured in whitelist")
+            Log.w(tag, "🚫 No phone numbers configured in allowed numbers")
             return false
         }
 
         val normalizedIncoming = normalizePhoneNumber(phoneNumber)
 
-        // Check if the incoming number matches any in the whitelist
         for (allowedNumber in allowedNumbers) {
             val normalizedAllowed = normalizePhoneNumber(allowedNumber)
 
-            // Check for exact match or if one contains the other (for different formatting)
             if (normalizedIncoming == normalizedAllowed ||
                 normalizedIncoming.contains(normalizedAllowed) ||
                 normalizedAllowed.contains(normalizedIncoming)
             ) {
-                Log.d(tag, "✅ Phone number $phoneNumber matches whitelist entry: $allowedNumber")
+                Log.d(tag, "✅ Phone number $phoneNumber matches allowed entry: $allowedNumber")
                 return true
             }
         }
 
-        Log.w(tag, "🚫 Phone number $phoneNumber not found in whitelist: $allowedNumbers")
+        Log.w(tag, "🚫 Phone number $phoneNumber not found in allowed numbers: $allowedNumbers")
         return false
     }
 
     private fun normalizePhoneNumber(phoneNumber: String): String {
-        // Remove spaces, dashes, parentheses, and other common formatting
         return phoneNumber.replace(Regex("[\\s\\-\\(\\)\\.]"), "")
     }
 
@@ -146,11 +142,10 @@ class WhitelistManager(private val context: Context) {
             return "Phone number too long"
         }
 
-        // Basic format check - should contain mostly digits and common formatting chars
         if (!trimmed.matches(Regex("^[+\\d\\s\\-\\(\\)\\.]+$"))) {
             return "Invalid phone number format"
         }
 
-        return null // Valid
+        return null
     }
 }

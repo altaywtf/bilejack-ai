@@ -1,6 +1,5 @@
-package ai.bilejack.llm
+package ai.bilejack
 
-import ai.bilejack.R
 import android.content.Context
 import android.util.Log
 import com.squareup.moshi.Moshi
@@ -11,10 +10,6 @@ import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import java.io.IOException
 
-/**
- * Direct OpenRouter service
- * See: https://openrouter.ai/docs/quickstart
- */
 class OpenRouterProvider(private val context: Context) {
     private val tag = "OpenRouterProvider"
 
@@ -57,7 +52,7 @@ class OpenRouterProvider(private val context: Context) {
 
     fun isConfigured(): Boolean {
         val apiKey = getApiKey()
-        return apiKey.isNotBlank() && apiKey != "your_openrouter_api_key_here"
+        return apiKey.isNotBlank()
     }
 
     private fun getApiKey(): String {
@@ -82,14 +77,6 @@ class OpenRouterProvider(private val context: Context) {
         return context.getString(R.string.openrouter_system_prompt)
     }
 
-    private fun getSiteUrl(): String {
-        return context.getString(R.string.openrouter_site_url)
-    }
-
-    private fun getSiteName(): String {
-        return context.getString(R.string.openrouter_site_name)
-    }
-
     suspend fun sendMessage(userMessage: String): String {
         val apiKey = getApiKey()
 
@@ -103,7 +90,12 @@ class OpenRouterProvider(private val context: Context) {
                     model = getModel(),
                     messages =
                         listOf(
-                            ChatMessage("system", "${getSystemPrompt()}\n\nREMINDER: Maximum response length is 360 characters. Count your characters carefully. Respond with plain text only, no web searches, no citations, no annotations, no tools."),
+                            ChatMessage(
+                                "system",
+                                "${getSystemPrompt()}\n\nREMINDER: Keep it SHORT! " +
+                                    "Respond with plain text only, " +
+                                    "no web searches, no citations, no annotations, no tools.",
+                            ),
                             ChatMessage("user", userMessage),
                         ),
                 )
@@ -117,8 +109,6 @@ class OpenRouterProvider(private val context: Context) {
                     .url("https://openrouter.ai/api/v1/chat/completions")
                     .addHeader("Authorization", "Bearer $apiKey")
                     .addHeader("Content-Type", "application/json")
-                    .addHeader("HTTP-Referer", getSiteUrl()) // For OpenRouter attribution
-                    .addHeader("X-Title", getSiteName()) // For OpenRouter attribution
                     .post(requestBody)
                     .build()
 
@@ -133,24 +123,19 @@ class OpenRouterProvider(private val context: Context) {
             }
 
             val chatResponse = moshi.adapter(ChatResponse::class.java).fromJson(responseBody ?: "")
-            
+
             val llmMessage =
                 chatResponse?.choices?.firstOrNull()?.message?.content
                     ?: throw Exception("Invalid OpenRouter response format")
 
             val content = llmMessage.trim()
-            val maxChars = 360 // 3 SMS * 120 chars each
-
-            // Enforce hard character limit
-            if (content.length > maxChars) {
-                Log.w(tag, "⚠️ LLM response too long (${content.length} chars), truncating to $maxChars")
-                return content.take(maxChars - 3) + "..."
-            }
 
             if (content.isEmpty()) {
                 Log.e(tag, "❌ Empty response from LLM - check API usage or model")
                 Log.e(tag, "🔍 Full response for debugging: $responseBody")
-                throw Exception("Empty response from LLM - model may be returning citations/annotations instead of text")
+                throw Exception(
+                    "Empty response from LLM - model may be returning citations/annotations instead of text",
+                )
             }
 
             Log.d(tag, "✅ OpenRouter response received successfully (${content.length} chars)")
