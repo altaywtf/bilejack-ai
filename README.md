@@ -1,8 +1,10 @@
 # Bilejack AI
 
-A native Android app that acts as a two-way SMS relay to communicate with LLM APIs via OpenRouter. Perfect for enabling AI chat capabilities on dumbphones via SMS.
+A native Android app that acts as a two-way SMS relay to communicate with LLM APIs via OpenRouter. It's designed for enabling AI chat capabilities on dumbphones via SMS.
 
-I made this app for my mandatory military service, where I was only allowed to use dumbphones.
+I made this app for my mandatory military service (in [Bilecik, Turkey](https://www.google.com/maps/place/Bilecik+Jandarma+E%C4%9Fitim+Alay+Komutanl%C4%B1%C4%9F%C4%B1/@40.153232,29.9720952,17z/data=!4m16!1m9!3m8!1s0x14cb8fc3ac4f70c3:0xb8462eaffb3049ac!2zQmlsZWNpayBKYW5kYXJtYSBFxJ9pdGltIEFsYXkgS29tdXRhbmzEscSfxLE!8m2!3d40.153232!4d29.9746701!9m1!1b1!16s%2Fg%2F11txrhk7wz!3m5!1s0x14cb8fc3ac4f70c3:0xb8462eaffb3049ac!8m2!3d40.153232!4d29.9746701!16s%2Fg%2F11txrhk7wz?hl=tr&entry=ttu&g_ep=EgoyMDI1MDkwMy4wIKXMDSoASAFQAw%3D%3D)), where we were only allowed to use dumbphones.
+
+It helped us to settle a lot of stupid debates... 🫠
 
 ## 🚀 Features
 
