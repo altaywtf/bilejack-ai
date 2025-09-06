@@ -1,13 +1,18 @@
 # Bilejack AI
 
-A native Android app that acts as a two-way SMS relay to communicate with LLM APIs. Perfect for enabling AI chat capabilities on dumbphones via SMS.
+A native Android app that acts as a two-way SMS relay to communicate with LLM APIs via OpenRouter. Perfect for enabling AI chat capabilities on dumbphones via SMS.
+
+I made this app for my mandatory military service, where I was only allowed to use dumbphones.
 
 ## 🚀 Features
 
+- **OpenRouter Integration**: Unified LLM gateway supporting multiple models (Perplexity, OpenAI, etc.)
+- **Real-time Web Search**: Models can search the web for current information
+- **Phone Number Whitelist**: Only allow SMS from specific phone numbers for security
+- **Model Selection**: Choose from multiple available LLM models
 - **Automatic SMS Processing**: Receives SMS messages and sends them to LLM
 - **Smart Response Splitting**: Automatically splits long LLM responses into multiple SMS messages
 - **Background Service**: Runs reliably in the background with foreground service
-- **Message History**: Track all conversations with timestamps and status
 - **Error Handling**: Robust error handling with automatic error SMS responses
 - **Simple UI**: Girlfriend-friendly interface with big buttons and clear status indicators
 - **Auto-start**: Automatically starts on device boot
@@ -17,13 +22,13 @@ A native Android app that acts as a two-way SMS relay to communicate with LLM AP
 - Android device with API level 36+ (Android 14+)
 - Active SIM card with SMS capabilities
 - Internet connection (WiFi or mobile data)
-- LLM API key
+- OpenRouter API key (get one at [openrouter.ai](https://openrouter.ai))
 
 ## 🛠️ Installation
 
 1. **Clone and Build**:
    ```bash
-   git clone <repository-url>
+   git clone https://github.com/altaywtf/bilejack-ai.git
    cd bilejack-ai
    ./gradlew assembleDebug
    ```
@@ -40,18 +45,53 @@ A native Android app that acts as a two-way SMS relay to communicate with LLM AP
 
 ## ⚙️ Setup
 
-1. **Set API Key**:
+1. **Configure API Key**:
+   - Edit `app/src/main/res/values/config.xml`
+   - Replace `OPENROUTER_API_KEY` with your actual OpenRouter API key
+   - Replace `ALLOWED_PHONE_NUMBERS` with comma-separated phone numbers (e.g., `+1234567890,+0987654321`)
+
+2. **Build and Install**:
+   - Build the app: `./gradlew assembleDebug`
+   - Install: `adb install app/build/outputs/apk/debug/app-debug.apk`
+
+3. **Test Connection**:
    - Open the app
-   - Tap "🔑 Set API Key"
-   - Enter your LLM API key
+   - Tap "🧪 Test LLM" to verify OpenRouter connection
+   - Check status indicators for LLM API and network connectivity
 
-2. **Test Connection**:
-   - Tap "🧪 Test LLM"
-   - Verify successful connection
+4. **Configure Whitelist** (Optional):
+   - Add allowed phone numbers through the app UI
+   - Or manage them in the config file
 
-3. **Send Test SMS**:
-   - Send an SMS to the device from another phone
-   - Check the message history in the app
+5. **Select Model** (Optional):
+   - Choose from available models: Perplexity Sonar, OpenAI GPT-4o, etc.
+   - Default is Perplexity Sonar with web search capabilities
+
+## ⚙️ Configuration
+
+The app uses `app/src/main/res/values/config.xml` for configuration:
+
+```xml
+<!-- OpenRouter Configuration -->
+<string name="openrouter_api_key">OPENROUTER_API_KEY</string>
+<string name="openrouter_system_prompt">You are an SMS assistant...</string>
+<string name="openrouter_available_models">perplexity/sonar,perplexity/sonar-pro,...</string>
+<string name="openrouter_default_model">perplexity/sonar</string>
+<string name="openrouter_web_search_context_size">medium</string>
+
+<!-- Security -->
+<string name="allowed_phone_numbers">ALLOWED_PHONE_NUMBERS</string>
+
+<!-- SMS Settings -->
+<integer name="sms_max_length">140</integer>
+<integer name="sms_chunk_delay_ms">2000</integer>
+<integer name="service_max_retries">5</integer>
+<integer name="service_retry_delay_ms">500</integer>
+```
+
+**Required Changes Before Building:**
+1. Replace `OPENROUTER_API_KEY` with your actual OpenRouter API key
+2. Replace `ALLOWED_PHONE_NUMBERS` with comma-separated phone numbers
 
 ## 🎯 Usage
 
@@ -68,41 +108,54 @@ A native Android app that acts as a two-way SMS relay to communicate with LLM AP
 
 ## 🎛️ UI Controls
 
-- **📩/📤/❌ Stats**: Shows received, sent, and error counts
 - **Status Indicators**: LLM API and network connectivity status
-- **🔄 Refresh**: Update statistics and message list
+- **Whitelist Summary**: Shows number of allowed phone numbers
+- **Model Summary**: Shows currently selected LLM model
 - **🔄 Restart Service**: Restart background processing
-- **🔑 Set API Key**: Configure LLM API key
-- **🧪 Test LLM**: Test API connectivity
-- **🧹 Clear Log**: Delete all message history
+- **🧪 Test LLM**: Test OpenRouter API connectivity
+- **Add Phone Number**: Add numbers to whitelist
+- **Manage Whitelist**: View and delete whitelisted numbers
+- **Clear Whitelist**: Remove all whitelisted numbers
+- **Select Model**: Choose from available LLM models
 
 ## 🔧 Technical Details
 
 ### Architecture
-- **MainActivity**: UI and controls
+- **MainActivity**: UI and controls with whitelist/model management
 - **SmsReceiver**: Handles incoming SMS broadcasts
-- **SmsRelayService**: Background processing and GPT communication
-- **GptClient**: LLM API communication
-- **Room Database**: Message storage and statistics
+- **SmsRelayService**: Background processing and OpenRouter communication
+- **OpenRouterProvider**: OpenRouter API communication with web search
+- **OpenRouterModelManager**: Model selection and configuration
+- **WhitelistedNumbersManager**: Phone number whitelist management
+- **BootReceiver**: Auto-start on device boot
+
+### Supported Models
+- **Perplexity Sonar**: Real-time web search capabilities
+- **Perplexity Sonar Pro**: Enhanced reasoning with web search
+- **Perplexity Sonar Reasoning**: Advanced reasoning model
+- **OpenAI GPT-4o Search Preview**: GPT-4o with web search
+- **OpenAI GPT-4o Mini Search Preview**: Lightweight GPT-4o with search
 
 ### Message Flow
-1. SMS received → SmsReceiver → Database
-2. Service picks up unprocessed messages
-3. Send to LLM API → Get response
+1. SMS received → SmsReceiver → Check whitelist
+2. If whitelisted → SmsRelayService processes message
+3. Send to OpenRouter API with selected model → Get response
 4. Split response if needed → Send SMS replies
-5. Update database with results
+5. Log results and update status
 
 ### Error Handling
 - Network failures: Automatic retry with backoff
 - API errors: Send error message via SMS
 - SMS sending failures: Log for manual review
+- Whitelist violations: Silent ignore (security feature)
 
 ## 🔒 Security Notes
 
-- API key stored locally in SharedPreferences
-- No external servers involved
-- All processing happens on device
-- Consider device physical security
+- **API Key Security**: Stored in config file (replace constants before building)
+- **Phone Number Whitelist**: Only whitelisted numbers can trigger responses
+- **No External Servers**: All processing happens on device
+- **OpenRouter Integration**: Uses OpenRouter as unified LLM gateway
+- **Physical Security**: Consider device physical security for API key protection
 
 ## 🐛 Troubleshooting
 
@@ -111,11 +164,12 @@ A native Android app that acts as a two-way SMS relay to communicate with LLM AP
 - Verify SIM card is active
 - Check if another SMS app is set as default
 
-### GPT responses not sent
+### OpenRouter responses not sent
 - Test LLM connection in app
 - Check internet connectivity
-- Verify API key is correct
-- Check for API rate limits
+- Verify API key is correctly set in config.xml
+- Check for OpenRouter API rate limits
+- Ensure phone number is whitelisted
 
 ### Service stops working
 - Disable battery optimization for app
@@ -125,17 +179,18 @@ A native Android app that acts as a two-way SMS relay to communicate with LLM AP
 
 ## 💡 Tips
 
-- Keep device charged and connected to power
-- Monitor SMS credit balance
-- Test thoroughly before deploying
-- Consider setting SMS spending limits
-- Backup message history periodically
+- **Configuration**: Always replace `OPENROUTER_API_KEY` and `ALLOWED_PHONE_NUMBERS` in config.xml before building
+- **Model Selection**: Perplexity Sonar is recommended for real-time web search capabilities
+- **Whitelist Management**: Use the app UI to manage phone numbers or edit config.xml directly
+- **Power Management**: Keep device charged and disable battery optimization for the app
+- **Cost Monitoring**: Monitor both SMS costs and OpenRouter API usage
+- **Testing**: Test thoroughly with whitelisted numbers before deploying
 
 ## 📊 Development
 
 ### Linting & Formatting
 ```bash
-./lint.sh              # Run all checks and auto-fix
+./lint.sh               # Run all checks and auto-fix
 ./gradlew ktlintCheck   # Check code style
 ./gradlew ktlintFormat  # Auto-fix formatting
 ```
@@ -152,4 +207,4 @@ MIT License - See LICENSE file for details.
 
 ---
 
-**⚠️ Important**: This app will incur costs for both SMS messages and LLM API usage. Monitor usage carefully and set appropriate limits. 
+**⚠️ Important**: This app will incur costs for both SMS messages and OpenRouter API usage. Monitor usage carefully and set appropriate limits. Always configure the whitelist to prevent unauthorized usage. 
